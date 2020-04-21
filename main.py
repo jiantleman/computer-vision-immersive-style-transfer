@@ -38,4 +38,8 @@ combination_image = backend.placeholder((1, WIDTH, HEIGHT, 3))
 input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 model = VGG19(input_tensor=input_tensor, include_top=False)
 
-print("complete")
+# Get the output of each layer
+cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
+
+def content_loss(content, combination):
+    return backend.sum(backend.square(combination - content))
