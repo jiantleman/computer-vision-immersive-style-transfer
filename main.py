@@ -30,7 +30,6 @@ def preprocess_image(image):
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
     image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[2]
     image = image[:, :, :, ::-1]
-    return image
 
 # Combining images into tensor
 content_image = backend.variable(preprocess_image(content_image))
