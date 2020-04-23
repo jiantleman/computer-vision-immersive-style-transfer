@@ -77,7 +77,7 @@ def gram_matrix(image):
 def total_variation_loss(image):
     height_variation = image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :]
     width_variation = image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :]
-    return backend.sum(backend.pow(height_variation + width_variation), LOSS_FACTOR))
+    return backend.sum(backend.pow(height_variation + width_variation), LOSS_FACTOR)
 
 # With weights
 def calc_total_variation_loss(image):
