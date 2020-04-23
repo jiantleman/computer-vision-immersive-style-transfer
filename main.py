@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 from tensorflow.keras import backend
 from tensorflow.keras.applications import vgg19 as V
 from tensorflow.keras.applications.vgg19 import VGG19
-tf.disable_v2_behavior()
+import tensorflow.compat.v1 as tfc
+tfc.disable_v2_behavior()
 
 # Hyperparameter Constants
 IMG_WIDTH = 128
