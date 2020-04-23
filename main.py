@@ -108,7 +108,7 @@ def main():
     style_image = img_as_float32(io.imread(style_image_path))
     style_image = transform.resize(style_image,(IMG_WIDTH, IMG_HEIGHT))
     #style_image = preprocess_image(style_image)
-    print("Images resized")
+    print("=====================Images resized=====================")
 
     # Combining images into tensor
     content_image = backend.variable(preprocess_image(content_image))
@@ -118,7 +118,7 @@ def main():
 
     # Load VGG model
     model = VGG19(input_tensor=input_tensor, include_top=False)
-    print("VGG model set up")
+    print("=====================VGG model set up=====================")
 
     # Forming the name-output dictionary for each layer
     cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
@@ -135,7 +135,7 @@ def main():
     # Total variation loss
     loss.assign_add(calc_total_variation_loss(combination_image))
     
-    print("All loss calculated")
+    print("=====================All loss calculated=====================")
         
 
 
