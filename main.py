@@ -92,10 +92,12 @@ def main():
     parser.add_argument('--content_image_path',
                         type=str,
                         default=os.getcwd() + '/data/1_content.jpg',
+                        required=True,
                         help='Path to the content image.')
     parser.add_argument('--style_image_path',
                         type=str,
                         default=os.getcwd() + '/data/1_style.jpg',
+                        required=True,
                         help='Path to the style image.')
     args = parser.parse_args()
 
