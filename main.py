@@ -124,14 +124,14 @@ def main():
     loss = backend.variable(0.0)
     # Content loss
     content_output = cnn_layers[CONTENT_LAYER]
-    loss += calc_content_loss(content_output)
+    loss.assign_add(calc_content_loss(content_output))
     # Style loss
     num_layer = len(STYLE_LAYER)
     for name in STYLE_LAYER:
         style_output = cnn_layers[name]
-        loss += calc_style_loss(style_output, num_layer)
+        loss.assign_add(calc_style_loss(style_output, num_layer))
     # Total variation loss
-    loss += calc_total_variation_loss(combination_image)
+    loss.assign_add(calc_total_variation_loss(combination_image))
     
     print("All loss calculated")
         
