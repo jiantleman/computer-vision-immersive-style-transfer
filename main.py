@@ -111,7 +111,7 @@ def main():
     # Combining images into tensor
     content_image = backend.variable(preprocess_image(content_image))
     style_image = backend.variable(preprocess_image(style_image))
-    combination_image = backend.placeholder((1, HEIGHT, WIDTH, 3))
+    combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
     input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
     # Load VGG model
