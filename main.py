@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from tensorflow.keras import backend
 from tensorflow.keras.applications import vgg19 as V
 from tensorflow.keras.applications.vgg19 import VGG19
-from tensorflow.linalg import einsum
 
 # Hyperparameter Constants
 IMG_WIDTH = 128
