@@ -56,8 +56,8 @@ def style_loss(image, combination):
 
 # With weights
 def calc_style_loss(output, num_output):
-    image = style_output[1, :, :, :]
-    combination = style_output[2, :, :, :]
+    image = output[1, :, :, :]
+    combination = output[2, :, :, :]
     return (STYLE_WEIGHT/num_output) * style_loss(image, combination)
 
 # Using the gram matrix equation
