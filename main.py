@@ -62,10 +62,12 @@ def calc_style_loss(output, num_output):
 
 # Using the gram matrix equation
 def gram_matrix(image):
-    numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
-    image_dimension = tf.shape(image)
-    denominator = image_dimension[1] * image_dimension[2]
-    return numerator_matrix/denominator
+    image = backend.batch_flatten(backend.permute_dimensions(image, (2, 0, 1)))
+    return backend.dot(image, backend.transpose(image))
+    # numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
+    # image_dimension = tf.shape(image)
+    # denominator = image_dimension[1] * image_dimension[2]
+    # return numerator_matrix/denominator
 
 #--------------------
 
