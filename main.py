@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from tensorflow.keras import backend
 from tensorflow.keras.applications import vgg19 as V
 from tensorflow.keras.applications.vgg19 import VGG19
+import tensorflow.linalg
 from tensorflow.linalg import einsum
 import tensorflow.shape
 
