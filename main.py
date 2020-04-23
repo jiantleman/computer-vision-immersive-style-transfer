@@ -5,7 +5,6 @@ import tensorflow as tf
 from skimage import io, img_as_float32, transform
 import matplotlib.pyplot as plt
 from tensorflow.keras import backend
-from tensorflow.keras.applications import vgg19 as V
 from tensorflow.keras.applications.vgg19 import VGG19
 import tensorflow.compat.v1 as tfc
 tfc.disable_v2_behavior()
@@ -25,9 +24,10 @@ STYLE_LAYER = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', '
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image):
+def preprocess_image(image_path):
+    image = img_as_float32(io.imread(image_path))
+    image = transform.resize(image,(IMG_WIDTH, IMG_HEIGHT))
     image = np.expand_dims(image, axis=0)
-    # image = V.preprocess_input(image)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
     image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[2]
@@ -77,7 +77,7 @@ def gram_matrix(image):
 def total_variation_loss(image):
     height_variation = image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :]
     width_variation = image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :]
-    return backend.sum(backend.pow(backend.square(height_variation) + backend.square(width_variation), LOSS_FACTOR))
+    return backend.sum(backend.pow(height_variation + width_variation), LOSS_FACTOR))
 
 # With weights
 def calc_total_variation_loss(image):
@@ -101,20 +101,20 @@ def main():
 
     # Get images and preprocess
     content_image_path = args.content_image_path
-    style_image_path = args.style_image_path    
+    style_image_path = args.style_image_path
+    content_image = preprocess_image(content_image_path)
+    style_image = preprocess_image(style_image_path)    
 
-    content_image = img_as_float32(io.imread(content_image_path))
-    content_image = transform.resize(content_image,(IMG_WIDTH, IMG_HEIGHT))
-    #content_image = preprocess_image(content_image)
+    # content_image = preprocess_image(content_image_path)
+    # content_image = transform.resize(content_image,(IMG_WIDTH, IMG_HEIGHT))
+    # style_image = img_as_float32(io.imread(style_image_path))
+    # style_image = transform.resize(style_image,(IMG_WIDTH, IMG_HEIGHT))
     
-    style_image = img_as_float32(io.imread(style_image_path))
-    style_image = transform.resize(style_image,(IMG_WIDTH, IMG_HEIGHT))
-    #style_image = preprocess_image(style_image)
     print("=====================Images resized=====================")
 
     # Combining images into tensor
-    content_image = backend.variable(preprocess_image(content_image))
-    style_image = backend.variable(preprocess_image(style_image))
+    content_image = backend.variable(content_image)
+    style_image = backend.variable(style_image)
     combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
     input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
