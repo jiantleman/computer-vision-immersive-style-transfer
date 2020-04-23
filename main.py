@@ -1,14 +1,13 @@
 import os
 import argparse
 import numpy as np
+import tensorflow as tf
 from skimage import io, img_as_float32, transform
 import matplotlib.pyplot as plt
 from tensorflow.keras import backend
 from tensorflow.keras.applications import vgg19 as V
 from tensorflow.keras.applications.vgg19 import VGG19
-import tensorflow.linalg
 from tensorflow.linalg import einsum
-import tensorflow.shape
 
 # Hyperparameter Constants
 IMG_WIDTH = 128
@@ -64,8 +63,8 @@ def calc_style_loss(output, num_output):
 
 # Using the gram matrix equation
 def gram_matrix(image):
-    numerator_matrix = einsum('bijc,bijd->bcd', image, image)
-    image_dimension = shape(image)
+    numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
+    image_dimension = tf.shape(image)
     denominator = image_dimension[1] * image_dimension[2]
     return numerator_matrix/denominator
 
