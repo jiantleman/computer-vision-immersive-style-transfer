@@ -1,6 +1,8 @@
 import os
 import argparse
 import numpy as np
+from scipy.optimize import minimize
+
 import tensorflow as tf
 from skimage import io, img_as_float32, transform
 import matplotlib.pyplot as plt
@@ -21,6 +23,7 @@ LOSS_FACTOR = 1.25
 CHANNELS = 3
 CONTENT_LAYER = 'block5_conv2'
 STYLE_LAYERS = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
+EPOCHS = 10
 
 #====================================================================
 
@@ -76,9 +79,9 @@ def gram_matrix(image):
 
 # Calculate total variation loss of an image
 def total_variation_loss(image):
-    height_variation = image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :]
-    width_variation = image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :]
-    return backend.sum(backend.pow((height_variation + width_variation), LOSS_FACTOR))
+    height_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :])
+    width_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :])
+    return backend.sum(backend.pow(height_variation + width_variation, LOSS_FACTOR))
 
 # With weights
 def calc_total_variation_loss(image):
@@ -122,7 +125,7 @@ def main():
     input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
     # Load VGG model
-    model = VGG19(input_tensor=content_image, include_top=False, weights="imagenet")
+    model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
 
     # Freeze weights
     for layer in model.layers:
@@ -153,24 +156,63 @@ def main():
     # Forming the name-output dictionary for each layer
     cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
 
-    loss = backend.variable(0.0)
-    
     # Content loss
     content_output = cnn_layers[CONTENT_LAYER]
-    loss.assign_add(calc_content_loss(content_output))
+    loss = calc_content_loss(content_output)
     # Style loss
     num_style_layers = len(STYLE_LAYERS)
     for layer_name in STYLE_LAYERS:
         style_layer_output = cnn_layers[layer_name]
-        loss.assign_add(calc_style_loss(style_layer_output, num_style_layers))
+        loss += calc_style_loss(style_layer_output, num_style_layers)
     # Total variation loss
-    loss.assign_add(calc_total_variation_loss(combination_image))
+    loss += calc_total_variation_loss(combination_image)
     
     print("=====================All losses set-up=====================")
+
+    gradient = backend.gradients(loss, combination_image)
+
+    print("=====================Gradient tensor set-up=====================")
+
+    loss_output = [loss]
+    gradients_output = [gradient]
     
-    print([loss])
+    class Evaluator:
+
+        def loss(self, x):
+            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            get_loss = backend.function([combination_image], loss_output)
+
+            [cur_loss] = get_loss([x])
+            return cur_loss
+
+        def gradients(self, x):
+            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            get_gradients = backend.function([combination_image], gradients_output)
+
+            [cur_gradients] = get_gradients([x])
+            cur_gradients = np.array(cur_gradients).flatten().astype("float64")
+            return cur_gradients
+
+        
+    evaluator = Evaluator()
+
+    generated_vals = np.random.uniform(0, 255, (1, IMG_HEIGHT, IMG_WIDTH, 3)) - 128.
+    for i in range(EPOCHS):
+        generated_vals, loss, info = minimize(
+            evaluator.loss,
+            generated_vals.flatten(),
+            method='L-BFGS-B',
+            jac=evaluator.gradients)
+        print("Iteration %d completed with loss %d" % (i, loss))
+    
+    generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+    generated_vals = generated_vals[:, :, ::-1]
+    generated_vals[:, :, 0] += IMAGENET_MEAN_RGB_VALUES[2]
+    generated_vals[:, :, 1] += IMAGENET_MEAN_RGB_VALUES[1]
+    generated_vals[:, :, 2] += IMAGENET_MEAN_RGB_VALUES[0]
+    generated_vals = np.clip(generated_vals, 0, 255).astype("uint8")
+    output_image = Image.fromarray(generated_vals)
+    output_image.save(output_image_path)
 
     
-
-
 main()
