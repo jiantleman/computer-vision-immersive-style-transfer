@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 from skimage import io, img_as_float32, transform
 import matplotlib.pyplot as plt
+from tensorflow.keras import models
 from tensorflow.keras import backend
 from tensorflow.keras.applications.vgg19 import VGG19
 import tensorflow.compat.v1 as tfc
@@ -19,7 +20,7 @@ TOTAL_VARIATION_WEIGHT = 1.0
 LOSS_FACTOR = 1.25
 CHANNELS = 3
 CONTENT_LAYER = 'block5_conv2'
-STYLE_LAYER = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
+STYLE_LAYERS = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
 
 #====================================================================
 
@@ -37,30 +38,30 @@ def preprocess_image(image_path):
 #--------------------
 
 # Calculating content loss from feature & combination image
-def content_loss(image, combination):
-    return backend.sum(backend.square(combination - image))
+def content_loss(content, combination):
+    return backend.sum(backend.square(combination - content))
 
 # With weights
 def calc_content_loss(output):
-    image = output[0, :, :, :]
-    combination = output[2, :, :, :]
-    return CONTENT_WEIGHT * content_loss(image, combination)
+    content_image_activations = output[0, :, :, :]
+    combination_image_activations = output[2, :, :, :]
+    return CONTENT_WEIGHT * content_loss(content_image_activations, combination_image_activations)
 
 #--------------------
 
 # Calculating style loss from feature & combination image
-def style_loss(image, combination):
-    image = gram_matrix(image)
+def style_loss(style, combination):
+    style = gram_matrix(style)
     combination = gram_matrix(combination)
-    numerator = backend.sum(backend.square(image - combination))
+    numerator = backend.sum(backend.square(style - combination))
     denominator = 4.0 * (CHANNELS ** 2) * ((IMG_HEIGHT * IMG_WIDTH) ** 2)
     return numerator/denominator
 
 # With weights
-def calc_style_loss(output, num_output):
-    image = output[1, :, :, :]
-    combination = output[2, :, :, :]
-    return (STYLE_WEIGHT/num_output) * style_loss(image, combination)
+def calc_style_loss(output, num_layers):
+    style_image_activations = output[1, :, :, :]
+    combination_image_activations = output[2, :, :, :]
+    return (STYLE_WEIGHT/num_layers) * style_loss(style_image_activations, combination_image_activations)
 
 # Using the gram matrix equation
 def gram_matrix(image):
@@ -121,27 +122,53 @@ def main():
     input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
     # Load VGG model
-    model = VGG19(input_tensor=input_tensor, include_top=False)
+    model = VGG19(input_tensor=content_image, include_top=False, weights="imagenet")
+
+    # Freeze weights
+    for layer in model.layers:
+        layer.trainable = False
+    
+    model.summary()
     print("=====================VGG model set up=====================")
 
+    # Get block4_conv2 layer
+    #content_layer = model.layers[13]
+    
+
+    #layer_outputs = [content_layer.output]
+    #activations_model = models.Model(inputs=model.input, outputs=layer_outputs)
+
+    #content_image = backend.variable(content_image)
+    #style_image = backend.variable(style_image)
+    #with tf.Session() as sess:
+        
+    #test_image = np.random.normal(0, 1, size=(1, IMG_HEIGHT, IMG_WIDTH, 3)).astype('float32')
+    #test_tensor = backend.concatenate([content_image,style_image,test_image], axis=0)
+
+
+    #activations = activations_model.predict(content_image, steps=1)
+    #content_layer_activation = activations[0]
+    #plt.matshow(content_layer_activation[:, :, :], cmap='viridis')
+    
     # Forming the name-output dictionary for each layer
     cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
 
     loss = backend.variable(0.0)
+    
     # Content loss
     content_output = cnn_layers[CONTENT_LAYER]
     loss.assign_add(calc_content_loss(content_output))
     # Style loss
-    num_layer = len(STYLE_LAYER)
-    for name in STYLE_LAYER:
-        style_output = cnn_layers[name]
-        loss.assign_add(calc_style_loss(style_output, num_layer))
+    num_style_layers = len(STYLE_LAYERS)
+    for layer_name in STYLE_LAYERS:
+        style_layer_output = cnn_layers[layer_name]
+        loss.assign_add(calc_style_loss(style_layer_output, num_style_layers))
     # Total variation loss
     loss.assign_add(calc_total_variation_loss(combination_image))
     
-    print("=====================All loss calculated=====================")
-        
-
+    print("=====================All losses set-up=====================")
+    
+    print([loss])
 
     
 
