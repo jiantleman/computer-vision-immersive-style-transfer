@@ -11,7 +11,7 @@ TOTAL_VARIATION_WEIGHT = 1.0
 LOSS_FACTOR = 1.25
 
 # Neural Network hyperparameters
-CONTENT_LAYER = 'block5_conv2'
+CONTENT_LAYER = 'block4_conv2'
 STYLE_LAYERS = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
 
 # Optimizer hyperparameters
