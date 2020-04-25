@@ -104,9 +104,16 @@ def main():
                         default=os.getcwd() + '/data/1_style.jpg',
                         required=True,
                         help='Path to the style image.')
+    parser.add_argument('--output_image_path',
+                        type=str,
+                        default=os.getcwd() + '/results/output.jpg',
+                        required=False,
+                        help='Path to the output image.')
+
     args = parser.parse_args()
 
     # Get images and preprocess
+    output_image_path = args.output_image_path
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
     content_image = preprocess_image(content_image_path)
@@ -199,21 +206,25 @@ def main():
 
     generated_vals = np.random.uniform(0, 255, (1, IMG_HEIGHT, IMG_WIDTH, 3)) - 128.
     for i in range(EPOCHS):
-        generated_vals, loss, info = minimize(
+        optimize_result = minimize(
             evaluator.loss,
             generated_vals.flatten(),
             method='L-BFGS-B',
-            jac=evaluator.gradients)
+            jac=evaluator.gradients,
+            options={'maxiter': 20})
+        generated_vals = optimize_result.x
+        loss = optimize_result.fun
         print("Iteration %d completed with loss %d" % (i, loss))
     
     generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
     generated_vals = generated_vals[:, :, ::-1]
-    generated_vals[:, :, 0] += IMAGENET_MEAN_RGB_VALUES[2]
-    generated_vals[:, :, 1] += IMAGENET_MEAN_RGB_VALUES[1]
-    generated_vals[:, :, 2] += IMAGENET_MEAN_RGB_VALUES[0]
-    generated_vals = np.clip(generated_vals, 0, 255).astype("uint8")
-    output_image = Image.fromarray(generated_vals)
-    output_image.save(output_image_path)
+    generated_vals[:, :, 0] += IMAGE_NET_MEAN_RGB[2]
+    generated_vals[:, :, 1] += IMAGE_NET_MEAN_RGB[1]
+    generated_vals[:, :, 2] += IMAGE_NET_MEAN_RGB[0]
+    output_image = np.clip(generated_vals, 0, 255).astype("uint8")
+
+    # Save generated image
+    plt.imsave(output_image_path, output_image)
 
     
 main()
