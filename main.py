@@ -123,8 +123,8 @@ def main():
         os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
-    content_image = preprocess_image(content_image_path)
-    style_image = preprocess_image(style_image_path)    
+    processed_content_image = preprocess_image(content_image_path)
+    processed_style_image = preprocess_image(style_image_path)    
 
     # content_image = preprocess_image(content_image_path)
     # content_image = transform.resize(content_image,(IMG_WIDTH, IMG_HEIGHT))
@@ -134,8 +134,8 @@ def main():
     print("=====================Images resized=====================")
 
     # Combining images into tensor
-    content_image = backend.variable(content_image)
-    style_image = backend.variable(style_image)
+    content_image = backend.variable(processed_content_image)
+    style_image = backend.variable(processed_style_image)
     combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
     input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
@@ -148,25 +148,6 @@ def main():
     
     model.summary()
     print("=====================VGG model set up=====================")
-
-    # Get block4_conv2 layer
-    #content_layer = model.layers[13]
-    
-
-    #layer_outputs = [content_layer.output]
-    #activations_model = models.Model(inputs=model.input, outputs=layer_outputs)
-
-    #content_image = backend.variable(content_image)
-    #style_image = backend.variable(style_image)
-    #with tf.Session() as sess:
-        
-    #test_image = np.random.normal(0, 1, size=(1, IMG_HEIGHT, IMG_WIDTH, 3)).astype('float32')
-    #test_tensor = backend.concatenate([content_image,style_image,test_image], axis=0)
-
-
-    #activations = activations_model.predict(content_image, steps=1)
-    #content_layer_activation = activations[0]
-    #plt.matshow(content_layer_activation[:, :, :], cmap='viridis')
     
     # Forming the name-output dictionary for each layer
     cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
@@ -211,7 +192,9 @@ def main():
         
     evaluator = Evaluator()
 
-    generated_vals = np.random.uniform(0, 255, (1, IMG_HEIGHT, IMG_WIDTH, 3)) - 128.
+    # Initialize with the fixed content image to get deterministic results
+    generated_vals = processed_content_image
+    
     for i in range(EPOCHS):
         optimize_result = minimize(
             evaluator.loss,
