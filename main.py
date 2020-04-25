@@ -34,7 +34,8 @@ EPOCHS = hp.EPOCHS
 
 # Mean normalization and preprocessing to format required for tensor
 def preprocess_image(image_path):
-    image = img_as_float32(io.imread(image_path))
+    image = io.imread(image_path)
+    image = np.asarray(image, dtype="float32")
     image = transform.resize(image,(IMG_WIDTH, IMG_HEIGHT))
     image = np.expand_dims(image, axis=0)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
