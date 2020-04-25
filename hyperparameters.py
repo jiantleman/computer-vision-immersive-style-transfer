@@ -12,7 +12,7 @@ LOSS_FACTOR = 1.25
 
 # Neural Network hyperparameters
 CONTENT_LAYER = 'block4_conv2'
-STYLE_LAYERS = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
+STYLE_LAYERS = ['block1_conv2', 'block2_conv2', 'block3_conv3', 'block4_conv3', 'block5_conv3']
 
 # Optimizer hyperparameters
 ITER_PER_EPOCH = 100
