@@ -37,9 +37,9 @@ def preprocess_image(image_path):
     image = img_as_float32(io.imread(image_path))
     image = transform.resize(image,(IMG_WIDTH, IMG_HEIGHT))
     image = np.expand_dims(image, axis=0)
-    image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[2]
+    image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
-    image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[0]
+    image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[2]
     image = image[:, :, :, ::-1]
     return image
 
@@ -224,9 +224,9 @@ def main():
     
     generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
     generated_vals = generated_vals[:, :, ::-1]
-    generated_vals[:, :, 0] += IMAGE_NET_MEAN_RGB[2]
+    generated_vals[:, :, 0] += IMAGE_NET_MEAN_RGB[0]
     generated_vals[:, :, 1] += IMAGE_NET_MEAN_RGB[1]
-    generated_vals[:, :, 2] += IMAGE_NET_MEAN_RGB[0]
+    generated_vals[:, :, 2] += IMAGE_NET_MEAN_RGB[2]
     output_image = np.clip(generated_vals, 0, 255).astype("uint8")
 
     # Save generated image
