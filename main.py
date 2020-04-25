@@ -13,6 +13,7 @@ import tensorflow.compat.v1 as tfc
 tfc.disable_v2_behavior()
 
 # Hyperparameter Constants
+#try dropping to 54x54
 IMG_WIDTH = 128
 IMG_HEIGHT = 128
 IMAGE_NET_MEAN_RGB = [103.939,116.779,123.68]
@@ -169,7 +170,7 @@ def main():
     
     print("=====================All losses set-up=====================")
 
-    gradient = backend.gradients(loss, combination_image)
+    gradient = backend.gradients(loss, [combination_image])
 
     print("=====================Gradient tensor set-up=====================")
 
