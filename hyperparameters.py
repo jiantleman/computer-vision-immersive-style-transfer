@@ -15,6 +15,6 @@ CONTENT_LAYER = 'block4_conv2'
 STYLE_LAYERS = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
 
 # Optimizer hyperparameters
-ITER_PER_EPOCH = 20
+ITER_PER_EPOCH = 100
 OPTIMIZER_METHOD = 'L-BFGS-B'
 EPOCHS = 10
