@@ -12,19 +12,23 @@ from tensorflow.keras.applications.vgg19 import VGG19
 import tensorflow.compat.v1 as tfc
 tfc.disable_v2_behavior()
 
+import hyperparameters as hp
+
 # Hyperparameter Constants
 #try dropping to 54x54
-IMG_WIDTH = 128
-IMG_HEIGHT = 128
-IMAGE_NET_MEAN_RGB = [103.939,116.779,123.68]
-CONTENT_WEIGHT = 0.025
-STYLE_WEIGHT = 1.0
-TOTAL_VARIATION_WEIGHT = 1.0
-LOSS_FACTOR = 1.25
-CHANNELS = 3
-CONTENT_LAYER = 'block5_conv2'
-STYLE_LAYERS = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
-EPOCHS = 10
+IMG_WIDTH = hp.IMG_WIDTH
+IMG_HEIGHT = hp.IMG_HEIGHT
+IMAGE_NET_MEAN_RGB = hp.IMAGE_NET_MEAN_RGB
+CHANNELS = hp.CHANNELS
+CONTENT_WEIGHT = hp.CONTENT_WEIGHT
+STYLE_WEIGHT = hp.STYLE_WEIGHT
+TOTAL_VARIATION_WEIGHT = hp.TOTAL_VARIATION_WEIGHT
+LOSS_FACTOR = hp.LOSS_FACTOR
+CONTENT_LAYER = hp.CONTENT_LAYER
+STYLE_LAYERS = hp.STYLE_LAYERS
+ITER_PER_EPOCH = hp.ITER_PER_EPOCH
+OPTIMIZER_METHOD = hp.OPTIMIZER_METHOD
+EPOCHS = hp.EPOCHS
 
 #====================================================================
 
@@ -209,12 +213,12 @@ def main():
         optimize_result = minimize(
             evaluator.loss,
             generated_vals.flatten(),
-            method='L-BFGS-B',
+            method=OPTIMIZER_METHOD,
             jac=evaluator.gradients,
-            options={'maxiter': 20})
+            options={'maxiter': ITER_PER_EPOCH})
         generated_vals = optimize_result.x
         loss = optimize_result.fun
-        print("Iteration %d completed with loss %d" % (i, loss))
+        print("Epoch %d completed with loss %d" % (i, loss))
     
     generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
     generated_vals = generated_vals[:, :, ::-1]
