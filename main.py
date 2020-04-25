@@ -114,6 +114,8 @@ def main():
 
     # Get images and preprocess
     output_image_path = args.output_image_path
+    if not os.path.exists('results'):
+        os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
     content_image = preprocess_image(content_image_path)
