@@ -36,7 +36,7 @@ EPOCHS = hp.EPOCHS
 def preprocess_image(image_path):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
-    image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH)) #changed
+    image = transform.resize(image,(IMG_WIDTH, IMG_HEIGHT))
     image = np.expand_dims(image, axis=0)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
@@ -85,8 +85,8 @@ def gram_matrix(image):
 
 # Calculate total variation loss of an image
 def total_variation_loss(image):
-    height_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :])
-    width_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :])
+    height_variation = backend.square(image[:, :IMG_WIDTH-1, :IMG_HEIGHT-1, :] - image[:, :IMG_WIDTH-1, 1:, :])
+    width_variation = backend.square(image[:, :IMG_WIDTH-1, :IMG_HEIGHT-1, :] - image[:, 1:, :IMG_HEIGHT-1, :])
     return backend.sum(backend.pow(height_variation + width_variation, LOSS_FACTOR))
 
 # With weights
@@ -136,7 +136,7 @@ def main():
     # Combining images into tensor
     content_image = backend.variable(processed_content_image)
     style_image = backend.variable(processed_style_image)
-    combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
+    combination_image = backend.placeholder((1, IMG_WIDTH, IMG_HEIGHT, 3))
     input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
     # Load VGG model
@@ -175,14 +175,14 @@ def main():
     class Evaluator:
 
         def loss(self, x):
-            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            x = x.reshape((1, IMG_WIDTH, IMG_HEIGHT, CHANNELS))
             get_loss = backend.function([combination_image], loss_output)
 
             [cur_loss] = get_loss([x])
             return cur_loss
 
         def gradients(self, x):
-            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            x = x.reshape((1, IMG_WIDTH, IMG_HEIGHT, CHANNELS))
             get_gradients = backend.function([combination_image], gradients_output)
 
             [cur_gradients] = get_gradients([x])
@@ -206,7 +206,7 @@ def main():
         loss = optimize_result.fun
         print("Epoch %d completed with loss %d" % (i, loss))
     
-    generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+    generated_vals = generated_vals.reshape((IMG_WIDTH, IMG_HEIGHT, CHANNELS))
     generated_vals = generated_vals[:, :, ::-1]
     generated_vals += IMAGE_NET_MEAN_RGB
     output_image = np.clip(generated_vals, 0, 255).astype("uint8")
