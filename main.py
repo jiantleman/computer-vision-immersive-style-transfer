@@ -213,6 +213,7 @@ def main():
 
     # Save generated image
     plt.imsave(output_image_path, output_image)
+    print("=====================Done=====================")
 
     
 main()
