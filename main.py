@@ -36,7 +36,7 @@ EPOCHS = hp.EPOCHS
 def preprocess_image(image_path):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
-    image = transform.resize(image,(IMG_WIDTH, IMG_HEIGHT))
+    image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH)) #changed
     image = np.expand_dims(image, axis=0)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
