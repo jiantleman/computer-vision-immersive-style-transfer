@@ -213,7 +213,8 @@ def main():
             generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
             generated_vals = generated_vals[:, :, ::-1]
             generated_vals += IMAGE_NET_MEAN_RGB
-            output_image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
+            image = np.clip(generated_vals, 0, 255).astype("uint8")
+            output_image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:] = image
             # Save generated image
     plt.imsave(output_image_path, output_image)        
 
