@@ -33,10 +33,11 @@ EPOCHS = hp.EPOCHS
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image_path):
+def preprocess_image(image_path, i, j):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
-    image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
+    image = transform.resize(image,(IMG_HEIGHT*2, IMG_WIDTH*2))
+    image = image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:]
     image = np.expand_dims(image, axis=0)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
@@ -117,97 +118,101 @@ def main():
 
     args = parser.parse_args()
 
-    # Get images and preprocess
     output_image_path = args.output_image_path
     if not os.path.exists('results'):
         os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
-    processed_content_image = preprocess_image(content_image_path)
-    processed_style_image = preprocess_image(style_image_path)    
-    
-    print("=====================Images resized=====================")
 
-    # Combining images into tensor
-    content_image = backend.variable(processed_content_image)
-    style_image = backend.variable(processed_style_image)
-    combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
-    input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
+    output_image = np.zeros((IMG_HEIGHT*2,IMG_WIDTH*2,3))
+    for i in range(0,2):
+        for j in range (0,2):
 
-    # Load VGG model
-    model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
+            # Get images and preprocess        
+            processed_content_image = preprocess_image(content_image_path, i ,j)
+            processed_style_image = preprocess_image(style_image_path, i, j)    
+            
+            print("=====================Images resized=====================")
 
-    # Freeze weights
-    for layer in model.layers:
-        layer.trainable = False
-    
-    model.summary()
-    print("=====================VGG model set up=====================")
-    
-    # Forming the name-output dictionary for each layer
-    cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
+            # Combining images into tensor
+            content_image = backend.variable(processed_content_image)
+            style_image = backend.variable(processed_style_image)
+            combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
+            input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
-    # Content loss
-    content_output = cnn_layers[CONTENT_LAYER]
-    loss = calc_content_loss(content_output)
-    # Style loss
-    num_style_layers = len(STYLE_LAYERS)
-    for layer_name in STYLE_LAYERS:
-        style_layer_output = cnn_layers[layer_name]
-        loss += calc_style_loss(style_layer_output, num_style_layers)
-    # Total variation loss
-    loss += calc_total_variation_loss(combination_image)
-    
-    print("=====================All losses set-up=====================")
+            # Load VGG model
+            model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
 
-    gradient = backend.gradients(loss, [combination_image])
+            # Freeze weights
+            for layer in model.layers:
+                layer.trainable = False
+            
+            model.summary()
+            print("=====================VGG model set up=====================")
+            
+            # Forming the name-output dictionary for each layer
+            cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
 
-    print("=====================Gradient tensor set-up=====================")
+            # Content loss
+            content_output = cnn_layers[CONTENT_LAYER]
+            loss = calc_content_loss(content_output)
+            # Style loss
+            num_style_layers = len(STYLE_LAYERS)
+            for layer_name in STYLE_LAYERS:
+                style_layer_output = cnn_layers[layer_name]
+                loss += calc_style_loss(style_layer_output, num_style_layers)
+            # Total variation loss
+            loss += calc_total_variation_loss(combination_image)
+            
+            print("=====================All losses set-up=====================")
 
-    loss_output = [loss]
-    gradients_output = [gradient]
-    
-    class Evaluator:
+            gradient = backend.gradients(loss, [combination_image])
 
-        def loss(self, x):
-            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-            get_loss = backend.function([combination_image], loss_output)
+            print("=====================Gradient tensor set-up=====================")
 
-            [cur_loss] = get_loss([x])
-            return cur_loss
+            loss_output = [loss]
+            gradients_output = [gradient]
+            
+            class Evaluator:
 
-        def gradients(self, x):
-            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-            get_gradients = backend.function([combination_image], gradients_output)
+                def loss(self, x):
+                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+                    get_loss = backend.function([combination_image], loss_output)
 
-            [cur_gradients] = get_gradients([x])
-            cur_gradients = np.array(cur_gradients).flatten().astype("float64")
-            return cur_gradients
+                    [cur_loss] = get_loss([x])
+                    return cur_loss
 
-        
-    evaluator = Evaluator()
+                def gradients(self, x):
+                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+                    get_gradients = backend.function([combination_image], gradients_output)
 
-    # Initialize with the fixed content image to get deterministic results
-    generated_vals = processed_content_image
-    
-    for i in range(EPOCHS):
-        optimize_result = minimize(
-            evaluator.loss,
-            generated_vals.flatten(),
-            method=OPTIMIZER_METHOD,
-            jac=evaluator.gradients,
-            options={'maxiter': ITER_PER_EPOCH})
-        generated_vals = optimize_result.x
-        loss = optimize_result.fun
-        print("Epoch %d completed with loss %d" % (i, loss))
-    
-    generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-    generated_vals = generated_vals[:, :, ::-1]
-    generated_vals += IMAGE_NET_MEAN_RGB
-    output_image = np.clip(generated_vals, 0, 255).astype("uint8")
+                    [cur_gradients] = get_gradients([x])
+                    cur_gradients = np.array(cur_gradients).flatten().astype("float64")
+                    return cur_gradients
 
-    # Save generated image
-    plt.imsave(output_image_path, output_image)
+                
+            evaluator = Evaluator()
+
+            # Initialize with the fixed content image to get deterministic results
+            generated_vals = processed_content_image
+            
+            for i in range(EPOCHS):
+                optimize_result = minimize(
+                    evaluator.loss,
+                    generated_vals.flatten(),
+                    method=OPTIMIZER_METHOD,
+                    jac=evaluator.gradients,
+                    options={'maxiter': ITER_PER_EPOCH})
+                generated_vals = optimize_result.x
+                loss = optimize_result.fun
+                print("Epoch %d completed with loss %d" % (i, loss))
+            
+            generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            generated_vals = generated_vals[:, :, ::-1]
+            generated_vals += IMAGE_NET_MEAN_RGB
+            output_image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
+            # Save generated image
+    plt.imsave(output_image_path, output_image)        
 
     
 main()
