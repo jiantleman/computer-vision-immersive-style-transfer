@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 import tensorflow as tf
-from skimage import io, img_as_float32, transform
+from skimage import io, img_as_float32, transform, filters
 import matplotlib.pyplot as plt
 from tensorflow.keras import models
 from tensorflow.keras import backend
@@ -124,7 +124,8 @@ def main():
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
     processed_content_image = preprocess_image(content_image_path)
-    processed_style_image = preprocess_image(style_image_path)    
+    processed_style_image = preprocess_image(style_image_path)
+    processed_style_image = filters.gaussian(processed_style_image)
     
     print("=====================Images resized=====================")
 
