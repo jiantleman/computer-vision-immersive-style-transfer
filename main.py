@@ -199,16 +199,16 @@ def main():
             # Initialize with the fixed content image to get deterministic results
             generated_vals = processed_content_image
             
-            # for i in range(EPOCHS):
-            #     optimize_result = minimize(
-            #         evaluator.loss,
-            #         generated_vals.flatten(),
-            #         method=OPTIMIZER_METHOD,
-            #         jac=evaluator.gradients,
-            #         options={'maxiter': ITER_PER_EPOCH})
-            #     generated_vals = optimize_result.x
-            #     loss = optimize_result.fun
-            #     print("Epoch %d completed with loss %d" % (i, loss))
+            for i in range(1):
+                optimize_result = minimize(
+                    evaluator.loss,
+                    generated_vals.flatten(),
+                    method=OPTIMIZER_METHOD,
+                    jac=evaluator.gradients,
+                    options={'maxiter': ITER_PER_EPOCH})
+                generated_vals = optimize_result.x
+                loss = optimize_result.fun
+                print("Epoch %d completed with loss %d" % (i, loss))
             
             generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
             generated_vals = generated_vals[:, :, ::-1]
