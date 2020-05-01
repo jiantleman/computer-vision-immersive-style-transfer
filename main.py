@@ -33,10 +33,12 @@ EPOCHS = hp.EPOCHS
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image_path):
+def preprocess_image(image_path, blur=False):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
+    if blur:
+        image = filters.gaussian(image)
     image = np.expand_dims(image, axis=0)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
@@ -124,8 +126,7 @@ def main():
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
     processed_content_image = preprocess_image(content_image_path)
-    processed_style_image = preprocess_image(style_image_path)
-    processed_style_image = filters.gaussian(processed_style_image)
+    processed_style_image = preprocess_image(style_image_path, blur=True)
     
     print("=====================Images resized=====================")
 
