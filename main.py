@@ -15,7 +15,6 @@ tfc.disable_v2_behavior()
 import hyperparameters as hp
 
 # Hyperparameter Constants
-#try dropping to 54x54
 IMG_WIDTH = hp.IMG_WIDTH
 IMG_HEIGHT = hp.IMG_HEIGHT
 IMAGE_NET_MEAN_RGB = hp.IMAGE_NET_MEAN_RGB
@@ -45,7 +44,6 @@ def path_to_image(image_path):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     return image
-    
 
 #--------------------
 
@@ -126,26 +124,23 @@ def main():
         os.makedirs('results')
 
     content_image = path_to_image(args.content_image_path)
+    ORIGINAL_IMG_HEIGHT = content_image.shape[0]
+    ORIGINAL_IMG_WIDTH = content_image.shape[1]
     style_image = path_to_image(args.style_image_path)
-    style_image = transform.resize(style_image,(IMG_HEIGHT, IMG_WIDTH))
-
-    print("=====================Style image resized=====================")
-
-
-    print(content_image.shape)
-
+    style_image = transform.resize(style_image, (IMG_HEIGHT, IMG_WIDTH))
     processed_style_image = preprocess_image(style_image)
+    print("=====================Style image resized and preprocessed=====================")
 
-    final_output_image = np.zeros((5000, 10000, 3), dtype=np.uint)
 
-    for w in range(10):
-        for h in range(5):
+    final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3), dtype=uint)
+
+    for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
+        for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
             content_image_part = content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
             processed_content_image = preprocess_image(content_image_part)
 
             
-
-
+            ### Haven't touched anything below this ###
 
             # Combining images into tensor
             content_image = backend.variable(processed_content_image)
@@ -202,7 +197,6 @@ def main():
                     [cur_gradients] = get_gradients([x])
                     cur_gradients = np.array(cur_gradients).flatten().astype("float64")
                     return cur_gradients
-
                 
             evaluator = Evaluator()
 
@@ -225,7 +219,7 @@ def main():
             generated_vals += IMAGE_NET_MEAN_RGB
             output_image = np.clip(generated_vals, 0, 255).astype("uint8")
 
-
+            ### Till here ###
 
             final_output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = output_image
 
