@@ -141,7 +141,7 @@ def main():
 
     for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
         for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
-            content_image_patch = content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            content_image_patch = content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH]
             processed_content_image = preprocess_image(content_image_patch)
 
             
