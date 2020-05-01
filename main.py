@@ -123,9 +123,9 @@ def main():
     if not os.path.exists('results'):
         os.makedirs('results')
 
-    content_image = path_to_image(args.content_image_path)
-    ORIGINAL_IMG_HEIGHT = content_image.shape[0]
-    ORIGINAL_IMG_WIDTH = content_image.shape[1]
+    original_content_image = path_to_image(args.content_image_path)
+    ORIGINAL_IMG_HEIGHT = original_content_image.shape[0]
+    ORIGINAL_IMG_WIDTH = original_content_image.shape[1]
     style_image = path_to_image(args.style_image_path)
     style_image = transform.resize(style_image, (IMG_HEIGHT, IMG_WIDTH))
     processed_style_image = preprocess_image(style_image)
@@ -141,7 +141,7 @@ def main():
 
     for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
         for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
-            content_image_patch = content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH]
+            content_image_patch = original_content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH]
             processed_content_image = preprocess_image(content_image_patch)
 
             
