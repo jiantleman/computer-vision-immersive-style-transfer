@@ -33,12 +33,12 @@ EPOCHS = hp.EPOCHS
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image_path, i, j, is_content):
+def preprocess_image(image_path, h, w, is_content):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     if is_content:
         image = transform.resize(image,(IMG_HEIGHT*2, IMG_WIDTH*2))
-        image = image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:]
+        image = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
     else:
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
@@ -129,11 +129,11 @@ def main():
     processed_style_image = preprocess_image(style_image_path, 0, 0, False)    
 
     output_image = np.zeros((IMG_HEIGHT*2,IMG_WIDTH*2,3), dtype=np.uint8)
-    for i in range(0,2):
-        for j in range (0,2):
+    for h in range(0,2):
+        for w in range (0,2):
 
             # Get images and preprocess        
-            processed_content_image = preprocess_image(content_image_path, i ,j, True)
+            processed_content_image = preprocess_image(content_image_path, h ,w, True)
             
             print("=====================Images resized=====================")
 
@@ -199,7 +199,7 @@ def main():
             # Initialize with the fixed content image to get deterministic results
             generated_vals = processed_content_image
             
-            for i in range(1):
+            for i in range(EPOCHS):
                 optimize_result = minimize(
                     evaluator.loss,
                     generated_vals.flatten(),
@@ -213,10 +213,7 @@ def main():
             generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
             generated_vals = generated_vals[:, :, ::-1]
             generated_vals += IMAGE_NET_MEAN_RGB
-            image = np.clip(generated_vals, 0, 255).astype("uint8")
-            print(image.shape)
-            print(output_image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:].shape)
-            output_image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:] = image
+            output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
             # Save generated image
     plt.imsave(output_image_path, output_image)        
 
