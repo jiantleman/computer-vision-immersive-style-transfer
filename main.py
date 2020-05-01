@@ -33,11 +33,14 @@ EPOCHS = hp.EPOCHS
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image_path, i, j):
+def preprocess_image(image_path, i, j, is_content):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
-    image = transform.resize(image,(IMG_HEIGHT*2, IMG_WIDTH*2))
-    image = image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:]
+    if is_content:
+        image = transform.resize(image,(IMG_HEIGHT*2, IMG_WIDTH*2))
+        image = image[i*IMG_HEIGHT:(i+1)*IMG_HEIGHT, j*IMG_WIDTH:(j+1)*IMG_WIDTH,:]
+    else:
+        image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
@@ -123,14 +126,17 @@ def main():
         os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
+    processed_style_image = preprocess_image(style_image_path, 0, 0, False)    
 
     output_image = np.zeros((IMG_HEIGHT*2,IMG_WIDTH*2,3))
+    print(output_image.shape)
     for i in range(0,2):
         for j in range (0,2):
 
             # Get images and preprocess        
-            processed_content_image = preprocess_image(content_image_path, i ,j)
-            processed_style_image = preprocess_image(style_image_path, i, j)    
+            processed_content_image = preprocess_image(content_image_path, i ,j, True)
+            print(processed_content_image.shape)
+            print(processed_style_image.shape)
             
             print("=====================Images resized=====================")
 
