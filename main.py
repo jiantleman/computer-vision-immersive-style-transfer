@@ -132,7 +132,7 @@ def main():
     print("=====================Style image resized and preprocessed=====================")
 
 
-    final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3), dtype=uint)
+    final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3))
 
     for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
         for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
