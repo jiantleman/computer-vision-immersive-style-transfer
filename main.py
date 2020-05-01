@@ -132,21 +132,25 @@ def main():
     print("=====================Style image resized and preprocessed=====================")
 
 
-    final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3))
+    style_image = backend.variable(processed_style_image)
+
+
+
+
+    final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3), dtype=uint)
 
     for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
         for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
-            content_image_part = content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-            processed_content_image = preprocess_image(content_image_part)
+            content_image_patch = content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            processed_content_image = preprocess_image(content_image_patch)
 
             
             ### Haven't touched anything below this ###
 
             # Combining images into tensor
             content_image = backend.variable(processed_content_image)
-            style_image = backend.variable(processed_style_image)
             combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
-            input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
+            input_tensor = backend.concatenate([content_image, style_image, combination_image], axis=0)
 
             # Load VGG model
             model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
