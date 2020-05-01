@@ -125,7 +125,7 @@ def main():
     if not os.path.exists('results'):
         os.makedirs('results')
 
-    content_image = path_to_image(args.content_image_pat)
+    content_image = path_to_image(args.content_image_path)
     style_image = path_to_image(args.style_image_path)
     style_image = transform.resize(style_image,(IMG_HEIGHT, IMG_WIDTH))
 
