@@ -103,18 +103,24 @@ def main():
     parser.add_argument('--content_image_path',
                         type=str,
                         default=os.getcwd() + '/data/1_content.jpg',
-                        required=True,
+                        required=False,
                         help='Path to the content image.')
     parser.add_argument('--style_image_path',
                         type=str,
                         default=os.getcwd() + '/data/1_style.jpg',
-                        required=True,
+                        required=False,
                         help='Path to the style image.')
+    parser.add_argument('--base_image_path',
+                        type=str,
+                        default=os.getcwd() + '/data/1_content.jpg',
+                        required=False,
+                        help='Path to the base image.')                    
     parser.add_argument('--output_image_path',
                         type=str,
                         default=os.getcwd() + '/results/output.jpg',
                         required=False,
                         help='Path to the output image.')
+    
 
     args = parser.parse_args()
 
@@ -123,8 +129,8 @@ def main():
         os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
+    base_image_path = args.base_image_path
        
-
     output_image = np.zeros((IMG_HEIGHT*2,IMG_WIDTH*2,3), dtype=np.uint8)
     for h in range(0,2):
         for w in range (0,2):
@@ -132,6 +138,7 @@ def main():
             # Get images and preprocess
             processed_style_image = preprocess_image(style_image_path, h, w)         
             processed_content_image = preprocess_image(content_image_path, h ,w)
+            processed_base_image = preprocess_image(base_image_path, h ,w)
             
             print("=====================Images resized=====================")
 
@@ -195,7 +202,7 @@ def main():
             evaluator = Evaluator()
 
             # Initialize with the fixed content image to get deterministic results
-            generated_vals = processed_content_image
+            generated_vals = processed_base_image
             
             for i in range(EPOCHS):
                 optimize_result = minimize(
