@@ -12,17 +12,17 @@ IMG_WIDTH = 1500
 IMG_HEIGHT = 750
 
 parser = argparse.ArgumentParser(description="Style Transer with CNN")
-parser.add_argument('--larg_image_path',
+parser.add_argument('--large',
                     type=str,
                     default=os.getcwd() + '/results/output.jpg',
                     required=False,
                     help='Path to the high resolution image.')
-parser.add_argument('--style_image_path',
+parser.add_argument('--base',
                     type=str,
                     default=os.getcwd() + '/data/1_base.jpg',
                     required=False,
                     help='Path to the low resolution base image.')
-parser.add_argument('--output_image_path',
+parser.add_argument('--output',
                     type=str,
                     default=os.getcwd() + '/results/stitched.jpg',
                     required=False,
@@ -30,23 +30,23 @@ parser.add_argument('--output_image_path',
 
 args = parser.parse_args()
 
-output_image_path = args.output_image_path
+output_image_path = args.output
 if not os.path.exists('results'):
     os.makedirs('results')
-large_image_path = args.content_image_path
-base_image_path = args.style_image_path
+large_image_path = args.large
+base_image_path = args.base
 
 image = io.imread(large_image_path)
 image = np.asarray(image, dtype="float32")
-adj = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+image = transform.resize(image,(2*IMG_HEIGHT, 2*IMG_WIDTH))
 
 base = io.imread(base_image_path)
 base = np.asarray(base, dtype="float32")
-
 large_base = transform.resize(base,(2*IMG_HEIGHT, 2*IMG_WIDTH))
 
+adj = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+
 for (h, w) in adj:
-    print(h, w)
     cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
     base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
 
