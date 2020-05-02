@@ -134,9 +134,9 @@ def main():
 
 
 
-
+    
     final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3), dtype=np.uint8)
-
+    count = 0
     for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
         for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
             content_image_patch = original_content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH]
@@ -223,6 +223,9 @@ def main():
             output_image = np.clip(generated_vals, 0, 255).astype("uint8")
 
                     ### Till here ###
+            count += 1
+            print("=====================Done Count:=====================")
+            print(count)
 
     final_output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = output_image
 
