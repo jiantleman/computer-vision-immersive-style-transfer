@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylized 360 Panoramas</title>
+    <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+  </head>
+  <style>
+   h1 {
+     font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+   }
+   body {
+     position: relative;
+     text-align: center;
+     font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+   }
+   
+   header {
+     color: white;
+
+     position: absolute;
+     padding: 2.5em;
+     border-radius: 2px;
+     text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+
+     top: 85%;
+     left: 50%;
+     transform: translate(-50%, -50%);
+   }
+
+   a, a:visited {
+     color: white;
+   }
+
+   a:hover {
+     color: silver;
+     text-decoration: none;
+     cursor: pointer;
+   }
+
+   #selector {
+     display: inline-block;
+     vertical-align: middle;
+     opacity: 0.8;
+   }
+
+   #selector:hover {
+     cursor: pointer;
+     outline: none;
+     opacity: 1;
+   }
+
+   .carousel {
+     margin-bottom: 1em;
+     position: relative;
+   }
+   
+   .scroll {
+     display: inline-block;
+     padding: 0.5em;
+     height: 75px;
+     vertical-align: middle;
+     padding-top: 25px;
+   }
+   .scroll:hover{
+     background-color: rgba(150, 150, 150, .4);
+     cursor: pointer;
+   }
+
+   .overlay-text {
+     opacity: 1;
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     -webkit-transform: translate(-50%, -50%);
+     -ms-transform: translate(-50%, -50%);
+     transform: translate(-50%, -50%);
+     text-align: center;
+   }
+
+   .overlay-text:hover {
+     cursor: pointer;
+   }
+
+   .#selector:hover .overlay-text{
+     opacity: 1;
+     display: inline-block;
+   }
+
+  </style>
+  <body>
+    <div id="panorama"></div>
+    <header>
+      <h1>Stylized 360 Panoramas</h1>
+      <div class="carousel">
+        <div class="scroll" onclick="updateImg('prev')"><a> &#10094; </a></div><img id="selector" src="results/1_output.jpg" height="75" onclick="updatePanorama()"><a class="scroll" onclick="updateImg('next')"> &#10095;</a>
+        <div class="overlay">
+          <div class="overlay-text" onclick="updatePanorama()">View Panorama</div>
+        </div>
+      </div>
+      
+      <div>Built and stylized by Desmond Cheong, Jian Cong Loh, and Miku Suga. Powered by <a href="https://pannellum.org" target="_blank">Pannellum</a>.</div>
+    </header>
+
+    
+    <script>
+     const default_fov = 120;
+     let panorama = document.getElementById('panorama');
+     
+     let selector = document.getElementById('selector');
+     let cur_img = 1;
+     const shift = {'prev': -1, 'next': 1};
+     const max_img = 7;
+
+     function updatePanorama() {
+       panorama.style.width = `${window.innerWidth}px`;
+       panorama.style.height = `${window.innerHeight}px`;
+       viewer = pannellum.viewer('panorama', {
+         "type": "equirectangular",
+         "panorama": `results/${cur_img}_output.jpg`,
+         "autoLoad": true,
+         "autoRotate": 2,
+       });
+       viewer.setHfov(default_fov, false);
+     }
+     
+     function updateImg(cmd) {
+       cur_img -= shift[cmd];
+       checkImg();
+       displayImg();
+     }
+     
+     function displayImg() {
+       selector.src = `results/${cur_img}_output.jpg`;
+     }
+
+     function checkImg() {
+       if (cur_img < 1) {
+         cur_img = max_img;
+       }
+       if (cur_img > max_img) {
+         cur_img = 1;
+       }
+     }
+
+     updatePanorama();
+     window.addEventListener("resize", updatePanorama);
+    </script>
+  </body>
+</html>
