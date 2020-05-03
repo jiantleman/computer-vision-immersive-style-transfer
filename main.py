@@ -135,102 +135,102 @@ def main():
 
 
     
-    final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3), dtype=np.uint8)
-    count = 0
-    for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
-        for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
-            content_image_patch = original_content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH]
-            processed_content_image = preprocess_image(content_image_patch)
+    # final_output_image = np.zeros((ORIGINAL_IMG_HEIGHT, ORIGINAL_IMG_WIDTH, 3), dtype=np.uint8)
+    # count = 0
+    # for w in range(int(ORIGINAL_IMG_WIDTH/IMG_WIDTH)):
+    #     for h in range(int(ORIGINAL_IMG_HEIGHT/IMG_HEIGHT)):
+    content_image_patch = original_content_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH]
+    processed_content_image = preprocess_image(content_image_patch)
 
-            
-            ### Haven't touched anything below this ###
+    
+    ### Haven't touched anything below this ###
 
-            # Combining images into tensor
-            content_image = backend.variable(processed_content_image)
-            style_image = backend.variable(processed_style_image)
-            combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
-            input_tensor = backend.concatenate([content_image, style_image, combination_image], axis=0)
+    # Combining images into tensor
+    content_image = backend.variable(processed_content_image)
+    style_image = backend.variable(processed_style_image)
+    combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
+    input_tensor = backend.concatenate([content_image, style_image, combination_image], axis=0)
 
-            # Load VGG model
-            model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
+    # Load VGG model
+    model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
 
-            # Freeze weights
-            for layer in model.layers:
-                layer.trainable = False
-            
-            model.summary()
-            print("=====================VGG model set up=====================")
-            
-            # Forming the name-output dictionary for each layer
-            cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
+    # Freeze weights
+    for layer in model.layers:
+        layer.trainable = False
+    
+    model.summary()
+    print("=====================VGG model set up=====================")
+    
+    # Forming the name-output dictionary for each layer
+    cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
 
-            # Content loss
-            content_output = cnn_layers[CONTENT_LAYER]
-            loss = calc_content_loss(content_output)
-            # Style loss
-            num_style_layers = len(STYLE_LAYERS)
-            for layer_name in STYLE_LAYERS:
-                style_layer_output = cnn_layers[layer_name]
-                loss += calc_style_loss(style_layer_output, num_style_layers)
-            # Total variation loss
-            loss += calc_total_variation_loss(combination_image)
-            
-            print("=====================All losses set-up=====================")
+    # Content loss
+    content_output = cnn_layers[CONTENT_LAYER]
+    loss = calc_content_loss(content_output)
+    # Style loss
+    num_style_layers = len(STYLE_LAYERS)
+    for layer_name in STYLE_LAYERS:
+        style_layer_output = cnn_layers[layer_name]
+        loss += calc_style_loss(style_layer_output, num_style_layers)
+    # Total variation loss
+    loss += calc_total_variation_loss(combination_image)
+    
+    print("=====================All losses set-up=====================")
 
-            gradient = backend.gradients(loss, [combination_image])
+    gradient = backend.gradients(loss, [combination_image])
 
-            print("=====================Gradient tensor set-up=====================")
+    print("=====================Gradient tensor set-up=====================")
 
-            loss_output = [loss]
-            gradients_output = [gradient]
-            
-            class Evaluator:
+    loss_output = [loss]
+    gradients_output = [gradient]
+    
+    class Evaluator:
 
-                def loss(self, x):
-                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-                    get_loss = backend.function([combination_image], loss_output)
+        def loss(self, x):
+            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            get_loss = backend.function([combination_image], loss_output)
 
-                    [cur_loss] = get_loss([x])
-                    return cur_loss
+            [cur_loss] = get_loss([x])
+            return cur_loss
 
-                def gradients(self, x):
-                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-                    get_gradients = backend.function([combination_image], gradients_output)
+        def gradients(self, x):
+            x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            get_gradients = backend.function([combination_image], gradients_output)
 
-                    [cur_gradients] = get_gradients([x])
-                    cur_gradients = np.array(cur_gradients).flatten().astype("float64")
-                    return cur_gradients
-                
-            evaluator = Evaluator()
+            [cur_gradients] = get_gradients([x])
+            cur_gradients = np.array(cur_gradients).flatten().astype("float64")
+            return cur_gradients
+        
+    evaluator = Evaluator()
 
-            # Initialize with the fixed content image to get deterministic results
-            generated_vals = processed_content_image
-            
-            for i in range(EPOCHS):
-                optimize_result = minimize(
-                    evaluator.loss,
-                    generated_vals.flatten(),
-                    method=OPTIMIZER_METHOD,
-                    jac=evaluator.gradients,
-                    options={'maxiter': ITER_PER_EPOCH})
-                generated_vals = optimize_result.x
-                loss = optimize_result.fun
-                print("Epoch %d completed with loss %d" % (i, loss))
-            
-            generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-            generated_vals = generated_vals[:, :, ::-1]
-            generated_vals += IMAGE_NET_MEAN_RGB
-            output_image = np.clip(generated_vals, 0, 255).astype("uint8")
+    # Initialize with the fixed content image to get deterministic results
+    generated_vals = processed_content_image
+    
+    for i in range(EPOCHS):
+        optimize_result = minimize(
+            evaluator.loss,
+            generated_vals.flatten(),
+            method=OPTIMIZER_METHOD,
+            jac=evaluator.gradients,
+            options={'maxiter': ITER_PER_EPOCH})
+        generated_vals = optimize_result.x
+        loss = optimize_result.fun
+        print("Epoch %d completed with loss %d" % (i, loss))
+    
+    generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+    generated_vals = generated_vals[:, :, ::-1]
+    generated_vals += IMAGE_NET_MEAN_RGB
+    output_image = np.clip(generated_vals, 0, 255).astype("uint8")
 
-                    ### Till here ###
-            count += 1
-            print("=====================Done Count:=====================")
-            print(count)
+            ### Till here ###
+    #         count += 1
+    #         print("=====================Done Count:=====================")
+    #         print(count)
 
-    final_output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = output_image
+    # final_output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = output_image
 
     # Save generated image
-    plt.imsave(output_image_path, final_output_image)
+    plt.imsave(output_image_path, output_image)
     print("=====================Done=====================")
 
     
