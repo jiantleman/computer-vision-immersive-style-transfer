@@ -74,8 +74,6 @@ for h in range(SCALE):
 base_norm = np.linalg.norm(base)
 image *= base_norm
 
-FIX_WIDTH = 250
-FIX_FACTOR = 1/FIX_WIDTH
 # Normalize edges along bands
 for _ in range(HORIZONTAL_PASSES):
     for h in range(SCALE - 1):
@@ -115,8 +113,6 @@ for _ in range(VERTICAL_PASSES):
 
 # Fix seam
 #image = image[:, 10:-10, :]
-FIX_WIDTH = 50
-FIX_FACTOR = 1/FIX_WIDTH
 image_copy = np.copy(image)
 for i in range(1, FIX_WIDTH):
     cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
