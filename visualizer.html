@@ -10,7 +10,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
   </head>
   <style>
-   h1 {
+   h1, h2, h3, h4, h5 {
      font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
    }
    body {
@@ -27,9 +27,9 @@
      border-radius: 2px;
      text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
 
-     top: 85%;
+     bottom: 1%;
      left: 50%;
-     transform: translate(-50%, -50%);
+     transform: translate(-50%, 0%);
    }
 
    a, a:visited {
@@ -61,7 +61,7 @@
    
    .scroll {
      display: inline-block;
-     padding: 0.5em;
+     padding: 1em;
      height: 75px;
      vertical-align: middle;
      padding-top: 25px;
@@ -91,6 +91,12 @@
      display: inline-block;
    }
 
+   #panorama2 {
+     position: fixed;
+     top: 0;
+     left: 0;
+   }
+
    .preload {
      display: none;
    }
@@ -101,13 +107,20 @@
     <img class="preload" src="results/3_output.jpg">
     <img class="preload" src="results/4_output.jpg">
     <img class="preload" src="results/5_output.jpg">
+    <img class="preload" src="data/1_content.jpg">
+    <img class="preload" src="data/2_content.jpg">
+    <img class="preload" src="data/3_content.jpg">
+    <img class="preload" src="data/4_content.jpg">
+    <img class="preload" src="data/5_content.jpg">
     <div id="panorama"></div>
+    <div id="panorama2"></div>
     <header>
       <h1>Stylized 360 Panoramas</h1>
+      <h4>Hit [space] to see the <span id="type">original</span> panorama!</h4>
       <div class="carousel">
         <div class="scroll" onclick="updateImg('prev')"><a> &#10094; </a></div><img id="selector" src="results/1_output.jpg" height="75" onclick="updatePanorama()"><a class="scroll" onclick="updateImg('next')"> &#10095;</a>
         <div class="overlay">
-          <div class="overlay-text" onclick="updatePanorama()">View Panorama</div>
+          <div class="overlay-text" onclick="updatePanorama()">New Panorama</div>
         </div>
       </div>
       
@@ -117,23 +130,69 @@
     
     <script>
      const default_fov = 120;
-     let panorama = document.getElementById('panorama');
+     let panoramas = [
+       { "id": 'panorama',
+         "num": 0,
+         "panorama": document.getElementById('panorama'),
+         "src_folder": 'results',
+         "src_name": '_output.jpg'
+       }, {
+         "id": 'panorama2',
+         "num": 1,
+         "panorama": document.getElementById('panorama2'),
+         "src_folder": 'data',
+         "src_name": '_content.jpg'
+       }];
+     let viewers = [null, null];
      
      let selector = document.getElementById('selector');
      let cur_img = 1;
      const shift = {'prev': -1, 'next': 1};
      const max_img = 5;
 
+     let view_original = 0;
+     const view = ['hidden', 'visible'];
+     let type = document.getElementById('type');
+     const type_vals = ['original', 'stylized'];
+
      function updatePanorama() {
-       panorama.style.width = `${window.innerWidth}px`;
-       panorama.style.height = `${window.innerHeight}px`;
-       viewer = pannellum.viewer('panorama', {
-         "type": "equirectangular",
-         "panorama": `results/${cur_img}_output.jpg`,
-         "autoLoad": true,
-         "autoRotate": 2,
+       panoramas.forEach(panorama => {
+         panorama['panorama'].style.width = `${window.innerWidth}px`;
+         panorama['panorama'].style.height = `${window.innerHeight}px`;
+         viewers[panorama['num']] = pannellum.viewer(panorama['id'], {
+           "type": "equirectangular",
+           "panorama": `${panorama['src_folder']}/${cur_img}${panorama['src_name']}`,
+           "autoLoad": true,
+           "autoRotate": 2,
+         });
+         viewers[panorama['num']].setHfov(default_fov, false);
        });
-       viewer.setHfov(default_fov, false);
+       view_original = 0;
+       let original = panoramas[1]['panorama'];
+       original.style.visibility = 'hidden';
+     }
+
+     function swapPanorama() {
+       let prev_viewer = viewers[view_original];
+       updateView();
+       let original = panoramas[1]['panorama'];
+       original.style.visibility = view[view_original];
+       type.textContent = type_vals[view_original];
+       let top_viewer = viewers[view_original];
+       let hov = prev_viewer.getHfov();
+       let pitch = prev_viewer.getPitch();
+       let yaw = prev_viewer.getYaw();
+       let auto_rotate = prev_viewer.getConfig().autoRotate;
+       if (!auto_rotate) {
+         top_viewer.stopAutoRotate()
+       }
+       top_viewer.setHfov(hov, false);
+       top_viewer.setPitch(pitch, false);
+       top_viewer.setYaw(yaw, false);
+     }
+
+     function updateView() {
+       view_original = (view_original + 1) % 2;
      }
      
      function updateImg(cmd) {
@@ -157,6 +216,15 @@
 
      updatePanorama();
      window.addEventListener("resize", updatePanorama);
+
+     window.addEventListener("keydown", e => {
+       //Space
+       console.log(e);
+       if (e.keyCode == 32) {
+         swapPanorama();
+       }
+     });
+
     </script>
   </body>
 </html>
