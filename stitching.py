@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 from PIL import ImageEnhance, Image, ImageFilter
 
 NUM_PASSES = 1
-FIX_WIDTH = 100
+FIX_WIDTH = 250
 FIX_FACTOR = 1/FIX_WIDTH
 IMG_WIDTH = 1500
 IMG_HEIGHT = 750
+SCALE = 4
+HORIZONTAL_PASSES = 5
+VERTICAL_PASSES = 3
 
 parser = argparse.ArgumentParser(description="Style Transer with CNN")
 parser.add_argument('--large',
@@ -38,77 +41,82 @@ base_image_path = args.base
 
 image = io.imread(large_image_path)
 image = np.asarray(image, dtype="float32")
-image = transform.resize(image,(2*IMG_HEIGHT, 2*IMG_WIDTH))
+image = transform.resize(image,(SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
 
 base = io.imread(base_image_path)
 base = np.asarray(base, dtype="float32")
-large_base = transform.resize(base,(2*IMG_HEIGHT, 2*IMG_WIDTH))
+large_base = transform.resize(base,(SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
 
-adj = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+for h in range(SCALE):
+    for w in range(SCALE):
+        cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+        base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+        print(h, w)
+        # Feather blend edges
+        for _ in range(NUM_PASSES):
+            for i in range(1, FIX_WIDTH):
+                cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
+                cur_quad[:, i-1, :] += cur_factor * base_quad[:, i-1, :]
+                cur_quad[:, -i, :] += cur_factor * base_quad[:, -i, :]
+                cur_quad[:, i-1, :] /= 1 + cur_factor
+                cur_quad[:, -i, :] /= 1 + cur_factor
+                cur_quad[i-1, :, :] += cur_factor * base_quad[i-1, :, :]
+                cur_quad[-i, :, :] += cur_factor * base_quad[-i, :, :]
+                cur_quad[i-1, :, :] /= 1 + cur_factor
+                cur_quad[-i, :, :] /= 1 + cur_factor
 
-for (h, w) in adj:
-    cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
-    base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
-
-    # Feather blend edges
-    for _ in range(NUM_PASSES):
-        for i in range(1, FIX_WIDTH):
-            cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
-            cur_quad[:, i-1, :] += cur_factor * base_quad[:, i-1, :]
-            cur_quad[:, -i, :] += cur_factor * base_quad[:, -i, :]
-            cur_quad[:, i-1, :] /= 1 + cur_factor
-            cur_quad[:, -i, :] /= 1 + cur_factor
-            cur_quad[i-1, :, :] += cur_factor * base_quad[i-1, :, :]
-            cur_quad[-i, :, :] += cur_factor * base_quad[-i, :, :]
-            cur_quad[i-1, :, :] /= 1 + cur_factor
-            cur_quad[-i, :, :] /= 1 + cur_factor
-
-    # Renormalize Quadrant
-    norm = np.linalg.norm(cur_quad)
-    cur_quad /= norm
+        # Renormalize Quadrant
+        norm = np.linalg.norm(cur_quad)
+        cur_quad /= norm
     
-    image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
+        image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
 
 base_norm = np.linalg.norm(base)
 image *= base_norm
 
+FIX_WIDTH = 250
+FIX_FACTOR = 1/FIX_WIDTH
 # Normalize edges along bands
-for _ in range(5):
-    for w in range(2):
-        top_quad = image[:IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-        bot_quad = image[IMG_HEIGHT:, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-        for i in range(1, FIX_WIDTH):
-            cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
-            top_band = top_quad[-i, :, :]
-            bot_band = bot_quad[i-1, :, :]
-            top_norms = np.linalg.norm(top_band, axis=0)
-            bot_norms = np.linalg.norm(bot_band, axis=0)
-            top_band = (top_band * bot_norms) / top_norms
-            bot_band = (bot_band * top_norms) / bot_norms
-            top_quad[-i, :, :] += cur_factor * top_band
-            bot_quad[i-1, :, :] += cur_factor * bot_band
-            top_quad[-i, :, :] /= 1 + cur_factor
-            bot_quad[i-1, :, :] /= 1 + cur_factor
+for _ in range(HORIZONTAL_PASSES):
+    for h in range(SCALE - 1):
+        for w in range(SCALE):
+            top_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            bot_quad = image[(h+1)*IMG_HEIGHT:(h+2)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            for i in range(1, FIX_WIDTH):
+                cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
+                top_band = top_quad[-i, :, :]
+                bot_band = bot_quad[i-1, :, :]
+                top_norms = np.linalg.norm(top_band, axis=0)
+                bot_norms = np.linalg.norm(bot_band, axis=0)
+                top_band = (top_band * bot_norms) / top_norms
+                bot_band = (bot_band * top_norms) / bot_norms
+                top_quad[-i, :, :] += cur_factor * top_band
+                bot_quad[i-1, :, :] += cur_factor * bot_band
+                top_quad[-i, :, :] /= 1 + cur_factor
+                bot_quad[i-1, :, :] /= 1 + cur_factor
             
-for _ in range(1):
-    for h in range(2):
-        left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, :IMG_WIDTH,:]
-        right_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, IMG_WIDTH:, :]
-        for i in range(1, FIX_WIDTH):
-            cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
-            left_band = left_quad[:, -i, :]
-            right_band = right_quad[:, i-1, :]
-            left_norms = np.linalg.norm(left_band, axis=0)
-            right_norms = np.linalg.norm(right_band, axis=0)
-            left_band = (left_band * right_norms) / left_norms
-            right_band = (right_band * left_norms) / right_norms
-            left_quad[:, -i, :] += cur_factor * left_band
-            right_quad[:, i-1, :] += cur_factor * right_band
-            left_quad[:, -i, :] /= 1 + cur_factor
-            right_quad[:, i-1, :] /= 1 + cur_factor 
+for _ in range(VERTICAL_PASSES):
+    for h in range(SCALE):
+        for w in range(SCALE - 1):
+            left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+            right_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, (w+1)*IMG_WIDTH:(w+2)*IMG_WIDTH, :]
+            for i in range(1, FIX_WIDTH):
+                cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
+                left_band = left_quad[:, -i, :]
+                right_band = right_quad[:, i-1, :]
+                left_norms = np.linalg.norm(left_band, axis=0)
+                right_norms = np.linalg.norm(right_band, axis=0)
+                left_band = (left_band * right_norms) / left_norms
+                right_band = (right_band * left_norms) / right_norms
+                left_quad[:, -i, :] += cur_factor * left_band
+                right_quad[:, i-1, :] += cur_factor * right_band
+                left_quad[:, -i, :] /= 1 + cur_factor
+                right_quad[:, i-1, :] /= 1 + cur_factor 
 
 # Fix seam
-image = image[:, 10:-10, :]
+#image = image[:, 10:-10, :]
+FIX_WIDTH = 50
+FIX_FACTOR = 1/FIX_WIDTH
 image_copy = np.copy(image)
 for i in range(1, FIX_WIDTH):
     cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
@@ -116,6 +124,30 @@ for i in range(1, FIX_WIDTH):
     image[:, -i, :] += cur_factor * image_copy[:, i-1, :]
     image[:, i-1, :] /= 1 + cur_factor
     image[:, -i, :] /= 1 + cur_factor
+
+# And renormalize everything band by band
+for h in range(SCALE):
+    for w in range(SCALE):
+        cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+        base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+        for i in range(IMG_HEIGHT):
+            cur_band = cur_quad[i, :, :]
+            norm = np.linalg.norm(cur_band)
+            base_band = base_quad[i, :, :]
+            base_norm = np.linalg.norm(base_band)            
+            cur_band = (cur_band * base_norm) / norm            
+            cur_quad[i, :, :] = cur_band
+
+        for i in range(IMG_WIDTH):
+            cur_band = cur_quad[:, i, :]
+            norm = np.linalg.norm(cur_band)
+            base_band = base_quad[:, i, :]
+            base_norm = np.linalg.norm(base_band)            
+            cur_band = (cur_band * base_norm) / norm            
+            cur_quad[:, i, :] = cur_band
+            
+        image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
+
 
 # Save image
 image =  np.clip(image, 0, 255).astype("uint8")
