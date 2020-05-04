@@ -33,7 +33,7 @@ SCALE = hp.SCALE
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image_path, h, w, is_content):
+def preprocess_image(image_path, h, w, is_content=False):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     if is_content:
@@ -45,7 +45,6 @@ def preprocess_image(image_path, h, w, is_content):
     image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
     image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
     image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[2]
-    image = image[:, :, :, ::-1]
     return image
 
 #--------------------
@@ -152,12 +151,12 @@ def main():
         os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
-    output_image = np.zeros((IMG_HEIGHT*SCALE,IMG_WIDTH*SCALE,CHANNELS), dtype=np.uint8)
+    output_image = np.zeros((IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE, CHANNELS), dtype=np.uint8)
 
     for h in range(0,SCALE):
         for w in range(0,SCALE):
-            processed_content_image = preprocess_image(content_image_path,h,w,True)
-            processed_style_image = preprocess_image(style_image_path,h,w,False)    
+            processed_content_image = preprocess_image(content_image_path, h, w, is_content=True)
+            processed_style_image = preprocess_image(style_image_path, h, w)    
         
             print("=====================Images resized=====================")
 
@@ -217,7 +216,6 @@ def main():
                 print("Epoch %d completed with loss %d" % (i, loss))
     
             generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-            generated_vals = generated_vals[:, :, ::-1]
             generated_vals += IMAGE_NET_MEAN_RGB
             output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
 
