@@ -42,9 +42,7 @@ def preprocess_image(image_path, h, w, is_content=False):
     else:
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
-    image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
-    image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
-    image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[2]
+    image -= IMAGE_NET_MEAN_RGB
     return image
 
 #--------------------
