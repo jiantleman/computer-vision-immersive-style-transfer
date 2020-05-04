@@ -37,8 +37,10 @@ def preprocess_image(image_path, h, w, is_content=False):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     if is_content:
-        image = transform.resize(image,(IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE))
-        image = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+        image = transform.resize(image, (IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE))
+        image = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
+                      w*IMG_WIDTH:(w+1)*IMG_WIDTH,
+                      :]
     else:
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
@@ -55,7 +57,8 @@ def content_loss(content, combination):
 def calc_content_loss(output):
     content_image_activations = output[0, :, :, :]
     combination_image_activations = output[2, :, :, :]
-    return CONTENT_WEIGHT * content_loss(content_image_activations, combination_image_activations)
+    return CONTENT_WEIGHT * content_loss(content_image_activations,
+                                         combination_image_activations)
 
 #--------------------
 
@@ -71,7 +74,8 @@ def style_loss(style, combination):
 def calc_style_loss(output, num_layers):
     style_image_activations = output[1, :, :, :]
     combination_image_activations = output[2, :, :, :]
-    return (STYLE_WEIGHT/num_layers) * style_loss(style_image_activations, combination_image_activations)
+    return (STYLE_WEIGHT/num_layers) * style_loss(style_image_activations,
+                                                  combination_image_activations)
 
 # Using the gram matrix equation
 def gram_matrix(image):
@@ -86,9 +90,12 @@ def gram_matrix(image):
 
 # Calculate total variation loss of an image
 def total_variation_loss(image):
-    height_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :])
-    width_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :])
-    return backend.sum(backend.pow(height_variation + width_variation, LOSS_FACTOR))
+    height_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :]
+                                      - image[:, :IMG_HEIGHT-1, 1:, :])
+    width_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :]
+                                     - image[:, 1:, :IMG_WIDTH-1, :])
+    return backend.sum(backend.pow(height_variation + width_variation,
+                                   LOSS_FACTOR))
 
 # With weights
 def calc_total_variation_loss(image):
@@ -149,11 +156,13 @@ def main():
         os.makedirs('results')
     content_image_path = args.content_image_path
     style_image_path = args.style_image_path
-    output_image = np.zeros((IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE, CHANNELS), dtype=np.uint8)
+    output_image = np.zeros((IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE, CHANNELS),
+                            dtype=np.uint8)
 
     for h in range(0,SCALE):
         for w in range(0,SCALE):
-            processed_content_image = preprocess_image(content_image_path, h, w, is_content=True)
+            processed_content_image = preprocess_image(content_image_path, h, w,
+                                                       is_content=True)
             processed_style_image = preprocess_image(style_image_path, h, w)    
         
             print("=====================Images resized=====================")
@@ -161,11 +170,19 @@ def main():
             # Combining images into tensor
             content_image = backend.variable(processed_content_image)
             style_image = backend.variable(processed_style_image)
-            combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
-            input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
+            combination_image = backend.placeholder((1,
+                                                     IMG_HEIGHT,
+                                                     IMG_WIDTH,
+                                                     CHANNELS))
+            input_tensor = backend.concatenate([content_image,
+                                                style_image,
+                                                combination_image],
+                                               axis=0)
 
             # Load VGG model
-            model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
+            model = VGG19(input_tensor=input_tensor,
+                          include_top=False,
+                          weights="imagenet")
 
             # Freeze weights
             for layer in model.layers:
@@ -175,7 +192,8 @@ def main():
             print("=====================VGG model set up=====================")
         
             # Forming the name-output dictionary for each layer
-            cnn_layers = dict([(layer.name, layer.output) for layer in model.layers])
+            cnn_layers = dict([(layer.name, layer.output)
+                               for layer in model.layers])
 
             # Content loss
             content_output = cnn_layers[CONTENT_LAYER]
@@ -192,14 +210,16 @@ def main():
 
             gradient = backend.gradients(loss, [combination_image])
 
-            print("=====================Gradient tensor set-up=====================")
+            print("===================Gradient tensor set-up==================")
 
             loss_output = [loss]
             gradients_output = [gradient]
                             
-            evaluator = Evaluator(loss_output, gradients_output, combination_image)
+            evaluator = Evaluator(loss_output,
+                                  gradients_output,
+                                  combination_image)
 
-            # Initialize with the fixed content image to get deterministic results
+            # Initialize with the fixed content image for deterministic results
             generated_vals = processed_content_image
     
             for i in range(EPOCHS):
@@ -213,9 +233,13 @@ def main():
                 loss = optimize_result.fun
                 print("Epoch %d completed with loss %d" % (i, loss))
     
-            generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+            generated_vals = generated_vals.reshape((IMG_HEIGHT,
+                                                     IMG_WIDTH,
+                                                     CHANNELS))
             generated_vals += IMAGE_NET_MEAN_RGB
-            output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
+            output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
+                         w*IMG_WIDTH:(w+1)*IMG_WIDTH,
+                         :] = np.clip(generated_vals, 0, 255).astype("uint8")
 
     # Save generated image
     plt.imsave(output_image_path, output_image)
