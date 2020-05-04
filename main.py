@@ -45,6 +45,7 @@ def preprocess_image(image_path, h, w, is_content=False):
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
     image -= IMAGE_NET_MEAN_RGB
+    image = image[:, :, :, ::-1]
     return image
 
 #--------------------
@@ -79,7 +80,7 @@ def calc_style_loss(output, num_layers):
 
 # Using the gram matrix equation
 def gram_matrix(image):
-    image = backend.batch_flatten(backend.permute_dimensions(image, (0, 2, 1)))
+    image = backend.batch_flatten(backend.permute_dimensions(image, (2, 0, 1)))
     return backend.dot(image, backend.transpose(image))
     # numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
     # image_dimension = tf.shape(image)
@@ -236,6 +237,7 @@ def main():
             generated_vals = generated_vals.reshape((IMG_HEIGHT,
                                                      IMG_WIDTH,
                                                      CHANNELS))
+            generated_vals = generated_vals[:, :, ::-1]
             generated_vals += IMAGE_NET_MEAN_RGB
             output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
                          w*IMG_WIDTH:(w+1)*IMG_WIDTH,
