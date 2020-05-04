@@ -2,10 +2,10 @@ import os
 import argparse
 import numpy as np
 from scipy.optimize import minimize
-
-import tensorflow as tf
 from skimage import io, transform
 import matplotlib.pyplot as plt
+
+import tensorflow as tf
 from tensorflow.keras import models
 from tensorflow.keras import backend
 from tensorflow.keras.applications.vgg19 import VGG19
@@ -97,6 +97,31 @@ def total_variation_loss(image):
 def calc_total_variation_loss(image):
     return TOTAL_VARIATION_WEIGHT * total_variation_loss(image)
 
+#-------------------
+# Evaluator class
+class Evaluator:
+    def __init__(self, loss_output, gradients_output, optimized_image):
+        self.loss_output = loss_output
+        self.gradients_output = gradients_output
+        self.optimized_image = optimized_image
+        
+    def loss(self, x):
+        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+        get_loss = backend.function([self.optimized_image],
+                                    self.loss_output)
+        
+        [cur_loss] = get_loss([x])
+        return cur_loss
+    
+    def gradients(self, x):
+        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+        get_gradients = backend.function([self.optimized_image],
+                                         self.gradients_output)
+        
+        [cur_gradients] = get_gradients([x])
+        cur_gradients = np.array(cur_gradients).flatten().astype("float64")
+        return cur_gradients
+
 #====================================================================
 
 
@@ -131,8 +156,6 @@ def main():
 
     for h in range(0,SCALE):
         for w in range(0,SCALE):
-
-
             processed_content_image = preprocess_image(content_image_path,h,w,True)
             processed_style_image = preprocess_image(style_image_path,h,w,False)    
         
@@ -176,26 +199,8 @@ def main():
 
             loss_output = [loss]
             gradients_output = [gradient]
-            
-            class Evaluator:
-
-                def loss(self, x):
-                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-                    get_loss = backend.function([combination_image], loss_output)
-
-                    [cur_loss] = get_loss([x])
-                    return cur_loss
-
-                def gradients(self, x):
-                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-                    get_gradients = backend.function([combination_image], gradients_output)
-
-                    [cur_gradients] = get_gradients([x])
-                    cur_gradients = np.array(cur_gradients).flatten().astype("float64")
-                    return cur_gradients
-
-                
-            evaluator = Evaluator()
+                            
+            evaluator = Evaluator(loss_output, gradients_output, combination_image)
 
             # Initialize with the fixed content image to get deterministic results
             generated_vals = processed_content_image
