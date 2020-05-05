@@ -124,6 +124,7 @@ def main():
         os.makedirs('results')
 
     original_content_image = path_to_image(args.content_image_path)
+    original_content_image = transform.resize(original_content_image, (IMG_HEIGHT, IMG_WIDTH))
     # ORIGINAL_IMG_HEIGHT = original_content_image.shape[0]
     # ORIGINAL_IMG_WIDTH = original_content_image.shape[1]
     style_image = path_to_image(args.style_image_path)
