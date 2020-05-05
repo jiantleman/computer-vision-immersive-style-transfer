@@ -64,7 +64,7 @@ def main():
             # Feather blend edges
             for _ in range(NUM_PASSES):
                 for i in range(1, FIX_WIDTH):
-                    cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
+                    cur_factor = -np.log(FIX_FACTOR * i)
                     cur_quad[:, i-1, :] += cur_factor * base_quad[:, i-1, :]
                     cur_quad[:, -i, :] += cur_factor * base_quad[:, -i, :]
                     cur_quad[:, i-1, :] /= 1 + cur_factor
@@ -76,7 +76,6 @@ def main():
                     
             # Renormalize Quadrant
             cur_quad = normalize(cur_quad, base_quad)
-            
             image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
             
             
@@ -87,7 +86,7 @@ def main():
                 top_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 bot_quad = image[(h+1)*IMG_HEIGHT:(h+2)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 for i in range(1, FIX_WIDTH):
-                    cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
+                    cur_factor = -np.log(FIX_FACTOR * i)
                     top_band = top_quad[-i, :, :]
                     bot_band = bot_quad[i-1, :, :]
                     top_normed = normalize(top_band, bot_band)
@@ -103,7 +102,7 @@ def main():
                 left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
                 right_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, (w+1)*IMG_WIDTH:(w+2)*IMG_WIDTH, :]
                 for i in range(1, FIX_WIDTH):
-                    cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
+                    cur_factor = -np.log(FIX_FACTOR * i)
                     left_band = left_quad[:, -i, :]
                     right_band = right_quad[:, i-1, :]
                     left_normed = normalize(left_band, right_band)
@@ -146,5 +145,8 @@ def main():
     image =  np.clip(image, 0, 255).astype("uint8")
     image = Image.fromarray(image)
     image.save(output_image_path)
+    
 
 main()
+
+
