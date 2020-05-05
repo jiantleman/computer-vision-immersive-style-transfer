@@ -1,6 +1,6 @@
 # Image preprocessing variables
 IMG_WIDTH = 1000
-IMG_HEIGHT = 1000
+IMG_HEIGHT = 250
 IMAGE_NET_MEAN_RGB = [103.939,116.779,123.68]
 CHANNELS = 3
 
