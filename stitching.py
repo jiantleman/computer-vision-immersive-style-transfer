@@ -63,8 +63,8 @@ def main():
         
     for h in range(SCALE):
         for w in range(SCALE):
-            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
-            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
             # Feather blend edges
             for _ in range(NUM_PASSES):
                 for i in range(1, FIX_WIDTH):
@@ -74,11 +74,11 @@ def main():
                     cur_quad[:, -i, :] = mixin(cur_quad[:, -i, :],
                                                base_quad[:, -i, :],
                                                i)
-                    cur_quad[i-1, :, :] = mixin(cur_quad[i-1, :, :],
-                                                base_quad[i-1, :, :],
+                    cur_quad[i-1, ...] = mixin(cur_quad[i-1, ...],
+                                                base_quad[i-1, ...],
                                                 i)
-                    cur_quad[-i, :, :] = mixin(cur_quad[-i, :, :],
-                                               base_quad[-i, :, :],
+                    cur_quad[-i, ...] = mixin(cur_quad[-i, ...],
+                                              base_quad[-i, ...],
                                                i)
             # Renormalize Quadrant
             cur_quad = normalize(cur_quad, base_quad)
@@ -88,20 +88,21 @@ def main():
     for _ in range(HORIZONTAL_PASSES):
         for h in range(SCALE - 1):
             for w in range(SCALE):
+                
                 top_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 bot_quad = image[(h+1)*IMG_HEIGHT:(h+2)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 for i in range(1, FIX_WIDTH):
-                    top_band = top_quad[-i, :, :]
-                    bot_band = bot_quad[i-1, :, :]
+                    top_band = top_quad[-i, ...]
+                    bot_band = bot_quad[i-1, ...]
                     top_normed = normalize(top_band, bot_band)
                     bot_normed = normalize(bot_band, top_band)
-                    top_quad[-i, :, :] = mixin(top_band, top_normed, i)
-                    bot_quad[i-1, :, :] = mixin(bot_band, bot_normed, i)
+                    top_quad[-i, ...] = mixin(top_band, top_normed, i)
+                    bot_quad[i-1, ...] = mixin(bot_band, bot_normed, i)
 
     for _ in range(VERTICAL_PASSES):
         for h in range(SCALE):
             for w in range(SCALE - 1):
-                left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+                left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 right_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, (w+1)*IMG_WIDTH:(w+2)*IMG_WIDTH, :]
                 for i in range(1, FIX_WIDTH):
                     left_band = left_quad[:, -i, :]
@@ -126,8 +127,8 @@ def main():
     # And renormalize everything band by band
     for h in range(SCALE):
         for w in range(SCALE):
-            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
-            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
             for i in range(IMG_HEIGHT):
                 cur_band = cur_quad[i, :, :]
                 base_band = base_quad[i, :, :]
@@ -138,7 +139,7 @@ def main():
                 base_band = base_quad[:, i, :]
                 cur_quad[:, i, :] = normalize(cur_band, base_band)
                 
-            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
+            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = cur_quad
 
     # Save image
     image =  np.clip(image, 0, 255).astype("uint8")
