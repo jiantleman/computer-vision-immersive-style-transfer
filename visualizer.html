@@ -148,7 +148,7 @@
      let selector = document.getElementById('selector');
      let cur_img = 1;
      const shift = {'prev': -1, 'next': 1};
-     const max_img = 5;
+     const max_img = 7;
 
      let view_original = 0;
      const view = ['hidden', 'visible'];
@@ -196,7 +196,7 @@
      }
      
      function updateImg(cmd) {
-       cur_img -= shift[cmd];
+       cur_img += shift[cmd];
        checkImg();
        displayImg();
      }
