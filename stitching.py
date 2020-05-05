@@ -22,6 +22,11 @@ def normalize(target, base):
     return target_copy
     
 
+def mixin(target, adjustment, multiplier):
+    cur_factor = -np.log(FIX_FACTOR * multiplier)
+    target += cur_factor * adjustment
+    return target / (1 + cur_factor)
+
 def main():
     parser = argparse.ArgumentParser(description="Style Transer with CNN")
     parser.add_argument('--large',
@@ -60,24 +65,24 @@ def main():
         for w in range(SCALE):
             cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
             base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
-            print(h, w)
             # Feather blend edges
             for _ in range(NUM_PASSES):
                 for i in range(1, FIX_WIDTH):
-                    cur_factor = -np.log(FIX_FACTOR * i)
-                    cur_quad[:, i-1, :] += cur_factor * base_quad[:, i-1, :]
-                    cur_quad[:, -i, :] += cur_factor * base_quad[:, -i, :]
-                    cur_quad[:, i-1, :] /= 1 + cur_factor
-                    cur_quad[:, -i, :] /= 1 + cur_factor
-                    cur_quad[i-1, :, :] += cur_factor * base_quad[i-1, :, :]
-                    cur_quad[-i, :, :] += cur_factor * base_quad[-i, :, :]
-                    cur_quad[i-1, :, :] /= 1 + cur_factor
-                    cur_quad[-i, :, :] /= 1 + cur_factor
-                    
+                    cur_quad[:, i-1, :] = mixin(cur_quad[:, i-1, :],
+                                                base_quad[:, i-1, :],
+                                                i)
+                    cur_quad[:, -i, :] = mixin(cur_quad[:, -i, :],
+                                               base_quad[:, -i, :],
+                                               i)
+                    cur_quad[i-1, :, :] = mixin(cur_quad[i-1, :, :],
+                                                base_quad[i-1, :, :],
+                                                i)
+                    cur_quad[-i, :, :] = mixin(cur_quad[-i, :, :],
+                                               base_quad[-i, :, :],
+                                               i)
             # Renormalize Quadrant
             cur_quad = normalize(cur_quad, base_quad)
             image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
-            
             
     # Normalize edges along bands
     for _ in range(HORIZONTAL_PASSES):
@@ -86,15 +91,12 @@ def main():
                 top_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 bot_quad = image[(h+1)*IMG_HEIGHT:(h+2)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
                 for i in range(1, FIX_WIDTH):
-                    cur_factor = -np.log(FIX_FACTOR * i)
                     top_band = top_quad[-i, :, :]
                     bot_band = bot_quad[i-1, :, :]
                     top_normed = normalize(top_band, bot_band)
                     bot_normed = normalize(bot_band, top_band)
-                    top_quad[-i, :, :] += cur_factor * top_normed
-                    bot_quad[i-1, :, :] += cur_factor * bot_normed
-                    top_quad[-i, :, :] /= 1 + cur_factor
-                    bot_quad[i-1, :, :] /= 1 + cur_factor
+                    top_quad[-i, :, :] = mixin(top_band, top_normed, i)
+                    bot_quad[i-1, :, :] = mixin(bot_quad, bot_normed, i)
 
     for _ in range(VERTICAL_PASSES):
         for h in range(SCALE):
@@ -102,19 +104,16 @@ def main():
                 left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
                 right_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, (w+1)*IMG_WIDTH:(w+2)*IMG_WIDTH, :]
                 for i in range(1, FIX_WIDTH):
-                    cur_factor = -np.log(FIX_FACTOR * i)
                     left_band = left_quad[:, -i, :]
                     right_band = right_quad[:, i-1, :]
                     left_normed = normalize(left_band, right_band)
-                    right_normed = normalize(right_band, left_band)
-                    left_quad[:, -i, :] += cur_factor * left_normed
-                    right_quad[:, i-1, :] += cur_factor * right_normed
-                    left_quad[:, -i, :] /= 1 + cur_factor
-                    right_quad[:, i-1, :] /= 1 + cur_factor 
+                    right_normed = normalize(right_band, left_band)                    
+                    left_quad[:, -i, :] = mixin(left_band, left_normed, i)
+                    right_quad[:, i-1, :] = mixin(right_band, right_normed, i)
                     
     # Fix seam - Removed because it causes some unwanted side effects
-    #image = image[:, 10:-10, :]
     '''
+    image = image[:, 10:-10, :]
     image_copy = np.copy(image)
     for i in range(1, FIX_WIDTH):
     cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
@@ -148,5 +147,3 @@ def main():
     
 
 main()
-
-
