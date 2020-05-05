@@ -96,7 +96,7 @@ def main():
                     top_normed = normalize(top_band, bot_band)
                     bot_normed = normalize(bot_band, top_band)
                     top_quad[-i, :, :] = mixin(top_band, top_normed, i)
-                    bot_quad[i-1, :, :] = mixin(bot_quad, bot_normed, i)
+                    bot_quad[i-1, :, :] = mixin(bot_band, bot_normed, i)
 
     for _ in range(VERTICAL_PASSES):
         for h in range(SCALE):
