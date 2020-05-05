@@ -102,12 +102,12 @@ def main():
     parser = argparse.ArgumentParser(description="Style Transer with CNN")
     parser.add_argument('--content_image_path',
                         type=str,
-                        default=os.getcwd() + '/data/1_content.jpg',
+                        default=os.getcwd() + '/data/6_content.jpg',
                         required=False,
                         help='Path to the content image.')
     parser.add_argument('--style_image_path',
                         type=str,
-                        default=os.getcwd() + '/data/1_style.jpg',
+                        default=os.getcwd() + '/data/7_style.jpg',
                         required=False,
                         help='Path to the style image.')
     parser.add_argument('--output_image_path',
