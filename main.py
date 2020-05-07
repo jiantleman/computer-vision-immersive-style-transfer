@@ -107,7 +107,7 @@ class Evaluator:
     def loss(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
         get_loss = backend.function(self.target_image, self.loss_output)
-        loss = get_loss([x])
+        [loss] = get_loss([x])
         return loss
     
     def gradients(self, x):
