@@ -83,8 +83,10 @@ def style_loss(output):
 
 # Calculate total variation loss of an image
 def total_variation_loss(image):
-    horizontal_variation = backend.square(image[:, :, :IMG_WIDTH-1, :] - image[:, :, 1:, :])
-    vertical_variation = backend.square(image[:, :IMG_HEIGHT-1, :, :] - image[:, 1:, :, :])
+    # Take the squared difference image and right-shifted image
+    horizontal_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :])
+    # Take difference image and down-shifted image
+    vertical_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :])
     return backend.sum(backend.pow(horizontal_variation + vertical_variation, LOSS_FACTOR))
 
 # With weights
