@@ -11,8 +11,8 @@ FIX_FACTOR = 1/FIX_WIDTH
 IMG_WIDTH = 1500
 IMG_HEIGHT = 750
 SCALE = 4
-HORIZONTAL_PASSES = 5
-VERTICAL_PASSES = 3
+HORIZONTAL_PASSES = 0
+VERTICAL_PASSES = 0
 
 def normalize(target, base):
     # Avoid destructive normalization
@@ -23,7 +23,7 @@ def normalize(target, base):
     
 
 def mixin(target, adjustment, multiplier):
-    cur_factor = -np.log(FIX_FACTOR * multiplier)
+    cur_factor = -np.log(FIX_FACTOR * multiplier) / 2
     target += cur_factor * adjustment
     return target / (1 + cur_factor)
 
@@ -60,11 +60,26 @@ def main():
     base = io.imread(base_image_path)
     base = np.asarray(base, dtype="float32")
     large_base = transform.resize(base,(SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
-        
+    
     for h in range(SCALE):
         for w in range(SCALE):
             cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
             base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            # Renormalize Quadrant
+            cur_quad = normalize(cur_quad, base_quad)
+
+            # Renormalize each horizontal band in the quadrant
+            for i in range(IMG_HEIGHT):
+                cur_band = cur_quad[i, :, :]
+                base_band = base_quad[i, :, :]
+                cur_quad[i, :, :] = normalize(cur_band, base_band)
+
+            # Renormalize each vertical band in the quadrant
+            for i in range(IMG_WIDTH):
+                cur_band = cur_quad[:, i, :]
+                base_band = base_quad[:, i, :]
+                cur_quad[:, i, :] = normalize(cur_band, base_band)
+
             # Feather blend edges
             for _ in range(NUM_PASSES):
                 for i in range(1, FIX_WIDTH):
@@ -75,14 +90,15 @@ def main():
                                                base_quad[:, -i, :],
                                                i)
                     cur_quad[i-1, ...] = mixin(cur_quad[i-1, ...],
-                                                base_quad[i-1, ...],
-                                                i)
+                                               base_quad[i-1, ...],
+                                               i)
                     cur_quad[-i, ...] = mixin(cur_quad[-i, ...],
                                               base_quad[-i, ...],
-                                               i)
-            # Renormalize Quadrant
-            cur_quad = normalize(cur_quad, base_quad)
-            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = cur_quad
+                                              i)
+
+                
+            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = cur_quad
+
             
     # Normalize edges along bands
     for _ in range(HORIZONTAL_PASSES):
@@ -124,23 +140,6 @@ def main():
     image[:, -i, :] /= 1 + cur_factor
     '''
     
-    # And renormalize everything band by band
-    for h in range(SCALE):
-        for w in range(SCALE):
-            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-            for i in range(IMG_HEIGHT):
-                cur_band = cur_quad[i, :, :]
-                base_band = base_quad[i, :, :]
-                cur_quad[i, :, :] = normalize(cur_band, base_band)
-                
-            for i in range(IMG_WIDTH):
-                cur_band = cur_quad[:, i, :]
-                base_band = base_quad[:, i, :]
-                cur_quad[:, i, :] = normalize(cur_band, base_band)
-                
-            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = cur_quad
-
     # Save image
     image =  np.clip(image, 0, 255).astype("uint8")
     image = Image.fromarray(image)
