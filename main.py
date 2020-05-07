@@ -67,7 +67,7 @@ def content_loss(output):
     return CONTENT_WEIGHT * sse(content_activations, combination_activations)
 
 # Calculating weighted style loss from feature & combination image
-def style_loss(output, num_layers):
+def style_loss(output):
     style_activations = output[1]
     combination_activations = output[2]
     
@@ -78,7 +78,7 @@ def style_loss(output, num_layers):
     style_loss_contribution = sse(style_correlations, combination_correlations)
     style_loss_contribution /= normalization_factor
     
-    return (STYLE_WEIGHT/num_layers) * style_loss_contribution
+    return STYLE_WEIGHT * style_loss_contribution
 
 
 # Calculate total variation loss of an image
@@ -174,22 +174,22 @@ def main():
             content_output = cnn_layers[CONTENT_LAYER]
             loss = content_loss(content_output)
             # Style loss
-            num_style_layers = len(STYLE_LAYERS)
+            n_style_layers = len(STYLE_LAYERS)
             for layer_name in STYLE_LAYERS:
                 style_layer_output = cnn_layers[layer_name]
-                style_layer_loss = style_loss(style_layer_output) / num_style_layers
+                style_layer_loss = style_loss(style_layer_output) / n_style_layers
                 loss += style_layer_loss
             # Total variation loss
             loss += calc_total_variation_loss(combination_image)
-            gradient = backend.gradients(loss, [combination_image])
+            gradients = backend.gradients(loss, [combination_image])
             
             print("=====================All tensors set-up=====================")
-            
-            evaluator = Evaluator([loss], [gradient], [combination_image])
 
-            # Initialize with the fixed content image to get deterministic results
+            # Initialize with the content image to get 'deterministic' results
             generated_vals = processed_content_image
-    
+                       
+            evaluator = Evaluator([loss], [gradients], [combination_image])
+
             for i in range(EPOCHS):
                 optimize_result = minimize(
                     evaluator.loss,
