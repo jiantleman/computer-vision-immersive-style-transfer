@@ -106,19 +106,16 @@ class Evaluator:
                     
     def loss(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-        get_loss = backend.function([self.target_image], self.loss_output)
-        [cur_loss] = get_loss([x])
-        return cur_loss
+        get_loss = backend.function(self.target_image, self.loss_output)
+        return get_loss([x])
     
     def gradients(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-        get_gradients = backend.function([self.target_image], self.gradients_output)
+        get_gradients = backend.function(self.target_image, self.gradients_output)
         
-        [cur_gradients] = get_gradients([x])
-        cur_gradients = np.array(cur_gradients).flatten().astype("float64")
-        return cur_gradients
-
-
+        gradients = get_gradients([x])
+        gradients = np.array(gradients).flatten().astype("float64")
+        return gradients
 
 def main():
     # Command-line parsing
@@ -187,17 +184,11 @@ def main():
                 loss += calc_style_loss(style_layer_output, num_style_layers)
             # Total variation loss
             loss += calc_total_variation_loss(combination_image)
-            
-            print("=====================All losses set-up=====================")
-
             gradient = backend.gradients(loss, [combination_image])
-
-            print("=====================Gradient tensor set-up=====================")
-
-            loss_output = [loss]
-            gradients_output = [gradient]
-                            
-            evaluator = Evaluator(loss_output, gradients_output, combination_image)
+            
+            print("=====================All tensors set-up=====================")
+            
+            evaluator = Evaluator([loss], [gradient], [combination_image])
 
             # Initialize with the fixed content image to get deterministic results
             generated_vals = processed_content_image
@@ -221,5 +212,5 @@ def main():
     # Save generated image
     plt.imsave(output_image_path, output_image)
 
-    
+
 main()
