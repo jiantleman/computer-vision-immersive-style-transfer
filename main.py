@@ -178,23 +178,27 @@ def main():
             gradients_output = [gradient]
             
             class Evaluator:
-
+                def __init__(loss_output, gradients_output, target_image):
+                    self.loss_output = loss_output
+                    self.gradients_output = gradients_output
+                    self.target_image = target_image
+                
                 def loss(self, x):
                     x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-                    get_loss = backend.function([combination_image], loss_output)
+                    get_loss = backend.function(self.target_image, self.loss_output)
 
                     [cur_loss] = get_loss([x])
                     return cur_loss
 
                 def gradients(self, x):
                     x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-                    get_gradients = backend.function([combination_image], gradients_output)
+                    get_gradients = backend.function(self.target_image, self.gradients_output)
 
                     [cur_gradients] = get_gradients([x])
                     cur_gradients = np.array(cur_gradients).flatten().astype("float64")
                     return cur_gradients
                 
-            evaluator = Evaluator()
+            evaluator = Evaluator(loss_output, gradients_output, [combination_image])
 
             # Initialize with the fixed content image to get deterministic results
             generated_vals = processed_content_image
