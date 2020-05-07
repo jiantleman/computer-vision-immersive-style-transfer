@@ -107,7 +107,8 @@ class Evaluator:
     def loss(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
         get_loss = backend.function(self.target_image, self.loss_output)
-        return get_loss([x])
+        loss = get_loss([x])
+        return loss
     
     def gradients(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
@@ -116,6 +117,8 @@ class Evaluator:
         gradients = get_gradients([x])
         gradients = np.array(gradients).flatten().astype("float64")
         return gradients
+
+
 
 def main():
     # Command-line parsing
