@@ -97,28 +97,8 @@ def total_variation_loss(image):
 def calc_total_variation_loss(image):
     return TOTAL_VARIATION_WEIGHT * total_variation_loss(image)
 
-# Define Evaluator
-class Evaluator:
-    def __init__(self, loss_output, gradient_output, target_image):
-        self.loss_output = loss_output
-        self.gradient_output = gradient_output
-        self.target_image = target_image
-        
-    def loss(self, x):
-        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-        get_loss = backend.function(self.target_image, self.loss_output)
-        
-        loss = get_loss([x])
-        return loss
-    
-    def gradients(self, x):
-        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-        get_gradients = backend.function(self.target_image, self.gradient_output)
-        
-        gradients = get_gradients([x])
-        gradients = np.array(gradients).flatten().astype("float64")
-        return gradients
-    
+#====================================================================
+
 
 def main():
     # Command-line parsing
@@ -161,8 +141,8 @@ def main():
             # Combining images into tensor
             content_image = backend.variable(processed_content_image)
             style_image = backend.variable(processed_style_image)
-            target_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
-            input_tensor = backend.concatenate([content_image,style_image,target_image], axis=0)
+            combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
+            input_tensor = backend.concatenate([content_image,style_image,combination_image], axis=0)
 
             # Load VGG model
             model = VGG19(input_tensor=input_tensor, include_top=False, weights="imagenet")
@@ -186,15 +166,37 @@ def main():
                 style_layer_output = cnn_layers[layer_name]
                 loss += calc_style_loss(style_layer_output, num_style_layers)
             # Total variation loss
-            loss += calc_total_variation_loss(target_image)
-            gradients = backend.gradients(loss, [target_image])
+            loss += calc_total_variation_loss(combination_image)
             
-            print("============All losses and gradients set-up================")
+            print("=====================All losses set-up=====================")
 
-            evaluator = Evaluator([loss], [gradients], [target_image])
+            gradient = backend.gradients(loss, [combination_image])
 
-            # Initialize output with the fixed content image
-            # to get deterministic results
+            print("=====================Gradient tensor set-up=====================")
+
+            loss_output = [loss]
+            gradients_output = [gradient]
+            
+            class Evaluator:
+
+                def loss(self, x):
+                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+                    get_loss = backend.function([combination_image], loss_output)
+
+                    [cur_loss] = get_loss([x])
+                    return cur_loss
+
+                def gradients(self, x):
+                    x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+                    get_gradients = backend.function([combination_image], gradients_output)
+
+                    [cur_gradients] = get_gradients([x])
+                    cur_gradients = np.array(cur_gradients).flatten().astype("float64")
+                    return cur_gradients
+                
+            evaluator = Evaluator()
+
+            # Initialize with the fixed content image to get deterministic results
             generated_vals = processed_content_image
     
             for i in range(EPOCHS):
