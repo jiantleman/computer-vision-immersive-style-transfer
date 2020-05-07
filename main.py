@@ -2,10 +2,10 @@ import os
 import argparse
 import numpy as np
 from scipy.optimize import minimize
-
-import tensorflow as tf
 from skimage import io, transform
 import matplotlib.pyplot as plt
+
+import tensorflow as tf
 from tensorflow.keras import models
 from tensorflow.keras import backend
 from tensorflow.keras.applications.vgg19 import VGG19
@@ -33,12 +33,12 @@ SCALE = hp.SCALE
 #====================================================================
 
 # Mean normalization and preprocessing to format required for tensor
-def preprocess_image(image_path, h, w, is_content):
+def preprocess_image(image_path, h, w, is_content=False):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     if is_content:
-        image = transform.resize(image,(IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE))
-        image = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:]
+        image = transform.resize(image, (IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE))
+        image = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
     else:
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
@@ -147,12 +147,11 @@ def main():
     style_image_path = args.style_image_path
     output_image = np.zeros((IMG_HEIGHT*SCALE,IMG_WIDTH*SCALE,CHANNELS), dtype=np.uint8)
 
-    for h in range(0,SCALE):
-        for w in range(0,SCALE):
-
-
-            processed_content_image = preprocess_image(content_image_path,h,w,True)
-            processed_style_image = preprocess_image(style_image_path,h,w,False)    
+    for h in range(SCALE):
+        for w in range(SCALE):
+            processed_content_image = preprocess_image(content_image_path, h, w,
+                                                       is_content=True)
+            processed_style_image = preprocess_image(style_image_path, h, w)    
         
             print("=====================Images resized=====================")
 
