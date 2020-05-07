@@ -47,43 +47,39 @@ def preprocess_image(image_path, h, w, is_content=False):
     return image
 
 #--------------------
+# Calculate sum squared difference
+def sse(first_feature, second_feature):
+    return backend.sum(backend.square(first_feature - second_feature))
 
-# Calculating content loss from feature & combination image
-def content_loss(content, combination):
-    return backend.sum(backend.square(combination - content))
-
-# With weights
-def calc_content_loss(output):
-    content_activations = output[0]
-    combination_activations = output[2]
-    return CONTENT_WEIGHT * content_loss(content_activations, combination_activations)
-
-#--------------------
-
-# Calculating style loss from feature & combination image
-def style_loss(style, combination):
-    style = gram_matrix(style)
-    combination = gram_matrix(combination)
-    numerator = backend.sum(backend.square(style - combination))
-    denominator = 4.0 * (CHANNELS ** 2) * ((IMG_HEIGHT * IMG_WIDTH) ** 2)
-    return numerator/denominator
-
-# With weights
-def calc_style_loss(output, num_layers):
-    style_activations = output[1]
-    combination_activations = output[2]
-    return (STYLE_WEIGHT/num_layers) * style_loss(style_activations, combination_activations)
-
-# Using the gram matrix equation
+# Calculate feature correlations using a gram matrix
 def gram_matrix(image):
     image = backend.batch_flatten(backend.permute_dimensions(image, (2, 0, 1)))
     return backend.dot(image, backend.transpose(image))
-    # numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
-    # image_dimension = tf.shape(image)
-    # denominator = image_dimension[1] * image_dimension[2]
-    # return numerator_matrix/denominator
+# numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
+# image_dimension = tf.shape(image)
+# denominator = image_dimension[1] * image_dimension[2]
+# return numerator_matrix/denominator
 
-#--------------------
+# Calculating weighted content loss from feature & combination image
+def content_loss(output):
+    content_activations = output[0]
+    combination_activations = output[2]
+    return CONTENT_WEIGHT * sse(content_activations, combination_activations)
+
+# Calculating weighted style loss from feature & combination image
+def style_loss(output, num_layers):
+    style_activations = output[1]
+    combination_activations = output[2]
+    
+    style_correlations = gram_matrix(style_activations)
+    combination_correlations = gram_matrix(combination_activations)
+    
+    normalization_factor = 4.0 * (CHANNELS ** 2) * ((IMG_HEIGHT * IMG_WIDTH) ** 2)
+    style_loss_contribution = sse(style_correlations, combination_correlations)
+    style_loss_contribution /= normalization_factor
+    
+    return (STYLE_WEIGHT/num_layers) * style_loss_contribution
+
 
 # Calculate total variation loss of an image
 def total_variation_loss(image):
@@ -176,12 +172,13 @@ def main():
 
             # Content loss
             content_output = cnn_layers[CONTENT_LAYER]
-            loss = calc_content_loss(content_output)
+            loss = content_loss(content_output)
             # Style loss
             num_style_layers = len(STYLE_LAYERS)
             for layer_name in STYLE_LAYERS:
                 style_layer_output = cnn_layers[layer_name]
-                loss += calc_style_loss(style_layer_output, num_style_layers)
+                style_layer_loss = style_loss(style_layer_output) / num_style_layers
+                loss += style_layer_loss
             # Total variation loss
             loss += calc_total_variation_loss(combination_image)
             gradient = backend.gradients(loss, [combination_image])
