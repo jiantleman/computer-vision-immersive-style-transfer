@@ -42,10 +42,8 @@ def preprocess_image(image_path, h, w, is_content):
     else:
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
-    image[:, :, :, 0] -= IMAGE_NET_MEAN_RGB[0]
-    image[:, :, :, 1] -= IMAGE_NET_MEAN_RGB[1]
-    image[:, :, :, 2] -= IMAGE_NET_MEAN_RGB[2]
-    image = image[:, :, :, ::-1]
+    image -= IMAGE_NET_MEAN_RGB
+    image = image[..., ::-1]
     return image
 
 #--------------------
@@ -56,9 +54,9 @@ def content_loss(content, combination):
 
 # With weights
 def calc_content_loss(output):
-    content_image_activations = output[0, :, :, :]
-    combination_image_activations = output[2, :, :, :]
-    return CONTENT_WEIGHT * content_loss(content_image_activations, combination_image_activations)
+    content_activations = output[0]
+    combination_activations = output[2]
+    return CONTENT_WEIGHT * content_loss(content_activations, combination_activations)
 
 #--------------------
 
@@ -72,9 +70,9 @@ def style_loss(style, combination):
 
 # With weights
 def calc_style_loss(output, num_layers):
-    style_image_activations = output[1, :, :, :]
-    combination_image_activations = output[2, :, :, :]
-    return (STYLE_WEIGHT/num_layers) * style_loss(style_image_activations, combination_image_activations)
+    style_activations = output[1]
+    combination_activations = output[2]
+    return (STYLE_WEIGHT/num_layers) * style_loss(style_activations, combination_activations)
 
 # Using the gram matrix equation
 def gram_matrix(image):
@@ -208,7 +206,7 @@ def main():
                 print("Epoch %d completed with loss %d" % (i, loss))
     
             generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-            generated_vals = generated_vals[:, :, ::-1]
+            generated_vals = generated_vals[..., ::-1]
             generated_vals += IMAGE_NET_MEAN_RGB
             output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
 
