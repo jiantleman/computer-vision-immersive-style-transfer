@@ -83,9 +83,9 @@ def style_loss(output):
 
 # Calculate total variation loss of an image
 def total_variation_loss(image):
-    height_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :])
-    width_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :])
-    return backend.sum(backend.pow(height_variation + width_variation, LOSS_FACTOR))
+    horizontal_variation = backend.square(image[:, :, :IMG_WIDTH-1, :] - image[:, :, 1:, :])
+    vertical_variation = backend.square(image[:, :IMG_HEIGHT-1, :, :] - image[:, 1:, :, :])
+    return backend.sum(backend.pow(horizontal_variation + vertical_variation, LOSS_FACTOR))
 
 # With weights
 def calc_total_variation_loss(image):
@@ -112,8 +112,7 @@ class Evaluator:
         gradients = np.array(gradients).flatten().astype("float64")
         return gradients
 
-
-
+    
 def main():
     # Command-line parsing
     parser = argparse.ArgumentParser(description="Style Transer with CNN")
