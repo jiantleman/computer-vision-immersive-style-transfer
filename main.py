@@ -195,8 +195,8 @@ def main():
                 style_layer_output = cnn_layers[layer_name]
                 style_layer_loss = style_loss(style_layer_output) / n_style_layers
                 loss += style_layer_loss
-            # Total variation loss
-            loss += calc_total_variation_loss(combination_image)
+            # Variation loss
+            loss += variation_loss(combination_image)
             gradients = backend.gradients(loss, [combination_image])
             
             print("====================All tensors set-up=====================")
