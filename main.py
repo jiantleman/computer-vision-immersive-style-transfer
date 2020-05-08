@@ -120,7 +120,7 @@ def gram_matrix(image):
 
 
 # Define new vgg model
-def new_vgg_model():
+def new_vgg_model(input_tensor):
     model = VGG19(input_tensor=input_tensor, include_top=False,
                   weights="imagenet")
     
@@ -226,7 +226,7 @@ def main():
                 axis=0)
 
             # Load VGG model
-            model, cnn_layers = new_vgg_model()
+            model, cnn_layers = new_vgg_model(input_tensor)
             
             print("=====================VGG model set-up======================")
         
