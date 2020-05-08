@@ -13,6 +13,7 @@ tfc.disable_v2_behavior()
 
 import hyperparameters as hp
 
+
 # Hyperparameter Constants
 IMG_WIDTH = hp.IMG_WIDTH
 IMG_HEIGHT = hp.IMG_HEIGHT
@@ -28,8 +29,57 @@ ITER_PER_EPOCH = hp.ITER_PER_EPOCH
 OPTIMIZER_METHOD = hp.OPTIMIZER_METHOD
 EPOCHS = hp.EPOCHS
 SCALE = hp.SCALE
+
+
+#====================================================================
+# Helper Classes
+
+class Evaluator:
+    def __init__(self, loss_output, gradients_output, target_image):
+        self.loss_output = loss_output
+        self.gradients_output = gradients_output
+        self.target_image = target_image
+        
+    def loss(self, x):
+        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+        get_loss = backend.function(self.target_image, self.loss_output)
+        [loss] = get_loss([x])
+        return loss
+    
+    def gradients(self, x):
+        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
+        get_gradients = backend.function(self.target_image,
+                                         self.gradients_output)
+        
+        gradients = get_gradients([x])
+        gradients = np.array(gradients).flatten().astype("float64")
+        return gradients
+
+
 #====================================================================
 # Helper Functions
+
+# Parse command-line arguments
+def parse_args():
+    parser = argparse.ArgumentParser(description="Style Transer with CNN")
+    parser.add_argument('--content_image_path',
+                        type=str,
+                        default=os.getcwd() + '/data/1_content.jpg',
+                        required=False,
+                        help='Path to the content image.')
+    parser.add_argument('--style_image_path',
+                        type=str,
+                        default=os.getcwd() + '/data/1_style.jpg',
+                        required=False,
+                        help='Path to the style image.')
+    parser.add_argument('--output_image_path',
+                        type=str,
+                        default=os.getcwd() + '/results/output.jpg',
+                        required=False,
+                        help='Path to the output image.')
+
+    return parser.parse_args()
+
 
 # Mean normalization and preprocessing to format required for tensor
 def preprocess_image(image_path, h, w, is_content=False):
@@ -47,9 +97,19 @@ def preprocess_image(image_path, h, w, is_content=False):
     return image
 
 
+# Prepare stylized patch to be saved to the output image
+def postprocess_image(generated_vals):
+    generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH,
+                                                         CHANNELS))
+    generated_vals += IMAGE_NET_MEAN_RGB
+    stylized_patch = np.clip(generated_vals, 0, 255).astype("uint8")
+    return stylized_patch
+
+
 # Calculate sum squared difference
 def sse(first_feature, second_feature):
     return backend.sum(backend.square(first_feature - second_feature))
+
 
 # Calculate feature correlations using a gram matrix
 def gram_matrix(image):
@@ -58,6 +118,23 @@ def gram_matrix(image):
     flattened_image = backend.batch_flatten(rgb_first_image)
     return backend.dot(flattened_image, backend.transpose(flattened_image))
 
+
+# Define new vgg model
+def new_vgg_model():
+    model = VGG19(input_tensor=input_tensor, include_top=False,
+                  weights="imagenet")
+    
+    # Freeze weights
+    for layer in model.layers:
+        layer.trainable = False
+    model.summary()
+    
+    # Forming the name-output dictionary for each layer
+    cnn_layers = dict([(layer.name, layer.output)
+                       for layer in model.layers])
+    
+    return model, cnn_layers
+    
 
 # Calculating weighted content loss from feature & combination image
 def content_loss(output):
@@ -99,135 +176,92 @@ def variation_loss(image):
     return TOTAL_VARIATION_WEIGHT * variation_loss_contribution
 
 
-#=====================================================================
-# Helper Classes
-
-class Evaluator:
-    def __init__(self, loss_output, gradients_output, target_image):
-        self.loss_output = loss_output
-        self.gradients_output = gradients_output
-        self.target_image = target_image
-                    
-    def loss(self, x):
-        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-        get_loss = backend.function(self.target_image, self.loss_output)
-        [loss] = get_loss([x])
-        return loss
-    
-    def gradients(self, x):
-        x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-        get_gradients = backend.function(self.target_image,
-                                         self.gradients_output)
+# Generate combination image
+def generate_combination_image(base_image, evaluator):
+    generated_vals = base_image
+    # Optimize combination image
+    for i in range(EPOCHS):
+        optimize_result = minimize(
+            evaluator.loss,
+            generated_vals.flatten(),
+            method=OPTIMIZER_METHOD,
+            jac=evaluator.gradients,
+            options={'maxiter': ITER_PER_EPOCH})
+        generated_vals = optimize_result.x
+        loss = optimize_result.fun
+        print("Epoch %d completed with loss %d" % (i, loss))
         
-        gradients = get_gradients([x])
-        gradients = np.array(gradients).flatten().astype("float64")
-        return gradients
-#====================================================================
+    return generated_vals
 
-    
+
+#=====================================================================
+# Main function
+
 def main():
-    # Command-line parsing
-    parser = argparse.ArgumentParser(description="Style Transer with CNN")
-    parser.add_argument('--content_image_path',
-                        type=str,
-                        default=os.getcwd() + '/data/1_content.jpg',
-                        required=False,
-                        help='Path to the content image.')
-    parser.add_argument('--style_image_path',
-                        type=str,
-                        default=os.getcwd() + '/data/1_style.jpg',
-                        required=False,
-                        help='Path to the style image.')
-    parser.add_argument('--output_image_path',
-                        type=str,
-                        default=os.getcwd() + '/results/output.jpg',
-                        required=False,
-                        help='Path to the output image.')
-
-    args = parser.parse_args()
-
-    # Get images and preprocess
-    output_image_path = args.output_image_path
+    # Get images
+    output_image_path = ARGS.output_image_path
     if not os.path.exists('results'):
         os.makedirs('results')
-    content_image_path = args.content_image_path
-    style_image_path = args.style_image_path
+    content_image_path = ARGS.content_image_path
+    style_image_path = ARGS.style_image_path
     output_image = np.zeros((IMG_HEIGHT*SCALE, IMG_WIDTH*SCALE, CHANNELS),
                             dtype=np.uint8)
 
     for h in range(SCALE):
         for w in range(SCALE):
+            # Preprocess images
             processed_content_image = preprocess_image(content_image_path, h, w,
                                                        is_content=True)
             processed_style_image = preprocess_image(style_image_path, h, w)    
         
-            print("=====================Images resized=====================")
+            print("=====================Images processed=====================")
 
             # Combining images into tensor
             content_image = backend.variable(processed_content_image)
             style_image = backend.variable(processed_style_image)
-            combination_image = backend.placeholder((1, IMG_HEIGHT, IMG_WIDTH, 3))
+            combination_image = backend.placeholder((1, IMG_HEIGHT,
+                                                     IMG_WIDTH, 3))
             input_tensor = backend.concatenate(
                 [content_image, style_image, combination_image],
                 axis=0)
 
             # Load VGG model
-            model = VGG19(input_tensor=input_tensor, include_top=False,
-                          weights="imagenet")
-
-            # Freeze weights
-            for layer in model.layers:
-                layer.trainable = False
+            model, cnn_layers = new_vgg_model()
             
-            model.summary()
-            print("=====================VGG model set up=====================")
+            print("=====================VGG model set-up======================")
         
-            # Forming the name-output dictionary for each layer
-            cnn_layers = dict([(layer.name, layer.output)
-                               for layer in model.layers])
-
-            # Content loss
+            # Add content loss
             content_output = cnn_layers[CONTENT_LAYER]
             loss = content_loss(content_output)
-            # Style loss
+            # Add style loss
             n_style_layers = len(STYLE_LAYERS)
             for layer_name in STYLE_LAYERS:
                 style_layer_output = cnn_layers[layer_name]
-                style_layer_loss = style_loss(style_layer_output) / n_style_layers
+                style_layer_loss = (style_loss(style_layer_output)
+                                    / n_style_layers)
                 loss += style_layer_loss
-            # Variation loss
+            # Add variation loss
             loss += variation_loss(combination_image)
             gradients = backend.gradients(loss, [combination_image])
             
             print("====================All tensors set-up=====================")
-
-            # Initialize with the content image to get 'deterministic' results
-            generated_vals = processed_content_image
                        
+            # Initialize with the content image to get 'deterministic' results
+            base_image = processed_content_image
+
+            # Generate current stylized patch
             evaluator = Evaluator([loss], [gradients], [combination_image])
+            generated_vals = generate_combination_image(base_image, evaluator)
 
-            # Optimize combination image
-            for i in range(EPOCHS):
-                optimize_result = minimize(
-                    evaluator.loss,
-                    generated_vals.flatten(),
-                    method=OPTIMIZER_METHOD,
-                    jac=evaluator.gradients,
-                    options={'maxiter': ITER_PER_EPOCH})
-                generated_vals = optimize_result.x
-                loss = optimize_result.fun
-                print("Epoch %d completed with loss %d" % (i, loss))
-
-            # Get current generated patch and save it to the output image
-            generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH,
-                                                     CHANNELS))
-            generated_vals += IMAGE_NET_MEAN_RGB
+            # Save stylized patch to the output image
             output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
                          w*IMG_WIDTH:(w+1)*IMG_WIDTH,
-                         :] = np.clip(generated_vals, 0, 255).astype("uint8")
+                         :] = postprocess_image(generated_vals)
 
     # Save generated image
     plt.imsave(output_image_path, output_image)
 
 
+ARGS = parse_args()
+    
 main()
