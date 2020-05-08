@@ -9,8 +9,6 @@ import tensorflow as tf
 from tensorflow.keras import models
 from tensorflow.keras import backend
 from tensorflow.keras.applications.vgg19 import VGG19
-import tensorflow.compat.v1 as tfc
-tfc.disable_v2_behavior()
 
 import hyperparameters as hp
 
@@ -56,10 +54,6 @@ def gram_matrix(image):
     rgb_first_image = backend.permute_dimensions(image, (2, 0, 1))
     flattened_image = backend.batch_flatten(rgb_first_image)
     return backend.dot(flattened_image, backend.transpose(flattened_image))
-# numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
-# image_dimension = tf.shape(image)
-# denominator = image_dimension[1] * image_dimension[2]
-# return numerator_matrix/denominator
 
 # Calculating weighted content loss from feature & combination image
 def content_loss(output):
