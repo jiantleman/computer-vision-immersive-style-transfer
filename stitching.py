@@ -5,29 +5,20 @@ from skimage import io, img_as_float32, transform, filters
 import matplotlib.pyplot as plt
 from PIL import ImageEnhance, Image, ImageFilter
 
+import hyperparameters as hp
+
+# Global Constants
+IMG_WIDTH = hp.IMG_WIDTH
+IMG_HEIGHT = hp.IMG_HEIGHT
+SCALE = hp.SCALE
+
 NUM_PASSES = 1
 FIX_WIDTH = 200
 FIX_FACTOR = 1/FIX_WIDTH
-IMG_WIDTH = 1500
-IMG_HEIGHT = 750
-SCALE = 4
-HORIZONTAL_PASSES = 0
-VERTICAL_PASSES = 0
 
-def normalize(target, base):
-    # Avoid destructive normalization
-    target_copy = np.copy(target)
-    target_copy = (target_copy - np.mean(target)) / np.std(target)
-    target_copy = target_copy * np.std(base) + np.mean(base)
-    return target_copy
-    
 
-def mixin(target, adjustment, multiplier):
-    cur_factor = -np.log(FIX_FACTOR * multiplier) / 2
-    target += cur_factor * adjustment
-    return target / (1 + cur_factor)
-
-def main():
+# Parse command-line arguments
+def parse_args():
     parser = argparse.ArgumentParser(description="Style Transer with CNN")
     parser.add_argument('--large',
                         type=str,
@@ -44,27 +35,50 @@ def main():
                         default=os.getcwd() + '/results/stitched.jpg',
                         required=False,
                         help='Path to the output image.')
-    
-    args = parser.parse_args()
-    
-    output_image_path = args.output
-    if not os.path.exists('results'):
-        os.makedirs('results')
-    large_image_path = args.large
-    base_image_path = args.base
-    
-    image = io.imread(large_image_path)
+    return parser.parse_args()
+
+
+# Preprocess images
+def get_scaled_image(image_path):
+    image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
     image = transform.resize(image,(SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
+    return image
+
+
+# Normalize the target value using the base value
+def normalize(target, base):
+    # Avoid destructive normalization
+    target_copy = np.copy(target)
+    target_copy = (target_copy - np.mean(target)) / np.std(target)
+    target_copy = target_copy * np.std(base) + np.mean(base)
+    return target_copy
     
-    base = io.imread(base_image_path)
-    base = np.asarray(base, dtype="float32")
-    large_base = transform.resize(base,(SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
+
+# Blend the target value with the adjustment value based on the multiplier
+def mixin(target, adjustment, multiplier):
+    cur_factor = -np.log(FIX_FACTOR * multiplier) / 2
+    target += cur_factor * adjustment
+    return target / (1 + cur_factor)
+
+
+def main():
+    # Get images
+    output_image_path = ARGS.output
+    large_image_path = ARGS.large
+    base_image_path = ARGS.base
+    
+    image = get_scaled_image(large_image_path)
+    large_base = get_scaled_image(base_image_path)
     
     for h in range(SCALE):
         for w in range(SCALE):
-            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
+            cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
+                             w*IMG_WIDTH:(w+1)*IMG_WIDTH,
+                             :]
+            base_quad = large_base[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
+                                   w*IMG_WIDTH:(w+1)*IMG_WIDTH,
+                                   :]
             # Renormalize Quadrant
             cur_quad = normalize(cur_quad, base_quad)
 
@@ -95,55 +109,16 @@ def main():
                     cur_quad[-i, ...] = mixin(cur_quad[-i, ...],
                                               base_quad[-i, ...],
                                               i)
-
-                
-            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :] = cur_quad
-
-            
-    # Normalize edges along bands
-    for _ in range(HORIZONTAL_PASSES):
-        for h in range(SCALE - 1):
-            for w in range(SCALE):
-                
-                top_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-                bot_quad = image[(h+1)*IMG_HEIGHT:(h+2)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-                for i in range(1, FIX_WIDTH):
-                    top_band = top_quad[-i, ...]
-                    bot_band = bot_quad[i-1, ...]
-                    top_normed = normalize(top_band, bot_band)
-                    bot_normed = normalize(bot_band, top_band)
-                    top_quad[-i, ...] = mixin(top_band, top_normed, i)
-                    bot_quad[i-1, ...] = mixin(bot_band, bot_normed, i)
-
-    for _ in range(VERTICAL_PASSES):
-        for h in range(SCALE):
-            for w in range(SCALE - 1):
-                left_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH, :]
-                right_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, (w+1)*IMG_WIDTH:(w+2)*IMG_WIDTH, :]
-                for i in range(1, FIX_WIDTH):
-                    left_band = left_quad[:, -i, :]
-                    right_band = right_quad[:, i-1, :]
-                    left_normed = normalize(left_band, right_band)
-                    right_normed = normalize(right_band, left_band)                    
-                    left_quad[:, -i, :] = mixin(left_band, left_normed, i)
-                    right_quad[:, i-1, :] = mixin(right_band, right_normed, i)
                     
-    # Fix seam - Removed because it causes some unwanted side effects
-    '''
-    image = image[:, 10:-10, :]
-    image_copy = np.copy(image)
-    for i in range(1, FIX_WIDTH):
-    cur_factor = (np.exp(1 - FIX_FACTOR * i)-1)
-    image[:, i-1, :] += cur_factor * image_copy[:, -i, :]
-    image[:, -i, :] += cur_factor * image_copy[:, i-1, :]
-    image[:, i-1, :] /= 1 + cur_factor
-    image[:, -i, :] /= 1 + cur_factor
-    '''
-    
+            image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
+                  w*IMG_WIDTH:(w+1)*IMG_WIDTH,
+                  :] = cur_quad                    
     # Save image
     image =  np.clip(image, 0, 255).astype("uint8")
     image = Image.fromarray(image)
     image.save(output_image_path)
-    
+
+
+ARGS = parse_args()
 
 main()
