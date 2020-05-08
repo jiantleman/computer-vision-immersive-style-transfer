@@ -4,20 +4,23 @@ In this project, we first used image representations derived from Convolutional 
 To view the final images, please visit our panorama viewer here: https://miku-suga.github.io/cs1430-final-project/visualizer.html
 
 ## Code organization
-# Results
+### Results
 All generated images can be found under the results/ folder.
+
 '*_output.jpg' images are the final stitched and processed images.
+
 '*_output_base.jpg' images are the smaller 1500x750px sized stylised images.
+
 '*_output_large.jpg' images are the stiched together, but unprocessed 4x4 images.
 
-# Data
+### Data
 The original content and style images can be viewed under the data/ folder.
 
-# Style Transfer
+### Style Transfer
 The code that was used to perform style transfer can be found in main.py and the hyperparameters used can be found in hyperparameters.py
 
-# Image post-processing
+### Image post-processing
 Image post-processing is carried out by stitching.py with some hyperparameters taken from hyperparameters.py
 
-# Visualizer
+### Visualizer
 All code for the visualizer is self-contained within visualizer.html
