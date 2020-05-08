@@ -9,6 +9,8 @@ import tensorflow as tf
 from tensorflow.keras import models
 from tensorflow.keras import backend
 from tensorflow.keras.applications.vgg19 import VGG19
+import tensorflow.compat.v1 as tfc
+tfc.disable_v2_behavior()
 
 import hyperparameters as hp
 
@@ -20,7 +22,7 @@ CHANNELS = hp.CHANNELS
 CONTENT_WEIGHT = hp.CONTENT_WEIGHT
 STYLE_WEIGHT = hp.STYLE_WEIGHT
 TOTAL_VARIATION_WEIGHT = hp.TOTAL_VARIATION_WEIGHT
-LOSS_FACTOR = hp.LOSS_FACTOR
+VARIATION_FACTOR = hp.VARIATION_FACTOR
 CONTENT_LAYER = hp.CONTENT_LAYER
 STYLE_LAYERS = hp.STYLE_LAYERS
 ITER_PER_EPOCH = hp.ITER_PER_EPOCH
@@ -82,7 +84,7 @@ def total_variation_loss(image):
     horizontal_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, :IMG_HEIGHT-1, 1:, :])
     # Take difference image and down-shifted image
     vertical_variation = backend.square(image[:, :IMG_HEIGHT-1, :IMG_WIDTH-1, :] - image[:, 1:, :IMG_WIDTH-1, :])
-    return backend.sum(backend.pow(horizontal_variation + vertical_variation, LOSS_FACTOR))
+    return backend.sum(backend.pow(horizontal_variation + vertical_variation, VARIATION_FACTOR))
 
 # With weights
 def calc_total_variation_loss(image):
