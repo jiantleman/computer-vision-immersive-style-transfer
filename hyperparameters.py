@@ -1,9 +1,9 @@
 # Image preprocessing variables
-IMG_WIDTH = 300
-IMG_HEIGHT = 150
+IMG_WIDTH = 1500
+IMG_HEIGHT = 750
 IMAGE_NET_MEAN_RGB = [103.939,116.779,123.68]
 CHANNELS = 3
-SCALE = 2
+SCALE = 4
 
 # Loss hyperparameters
 CONTENT_WEIGHT = 0.005
