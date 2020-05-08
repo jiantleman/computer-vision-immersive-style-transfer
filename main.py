@@ -53,8 +53,10 @@ def sse(first_feature, second_feature):
 
 # Calculate feature correlations using a gram matrix
 def gram_matrix(image):
-    image = backend.batch_flatten(image)
-    return backend.dot(image, backend.transpose(image))
+    # Shift rgb to the first dimension
+    rgb_first_image = backend.permute_dimensions(image, (2, 0, 1))
+    flattened_image = backend.batch_flatten(rgb_first_image)
+    return backend.dot(flattened_image, backend.transpose(flattened_image))
 # numerator_matrix = tf.einsum('bijc,bijd->bcd', image, image)
 # image_dimension = tf.shape(image)
 # denominator = image_dimension[1] * image_dimension[2]
