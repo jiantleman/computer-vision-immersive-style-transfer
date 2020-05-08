@@ -43,7 +43,6 @@ def preprocess_image(image_path, h, w, is_content=False):
         image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
     image -= IMAGE_NET_MEAN_RGB
-    image = image[..., ::-1]
     return image
 
 #--------------------
@@ -205,7 +204,6 @@ def main():
                 print("Epoch %d completed with loss %d" % (i, loss))
     
             generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH, CHANNELS))
-            generated_vals = generated_vals[..., ::-1]
             generated_vals += IMAGE_NET_MEAN_RGB
             output_image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT, w*IMG_WIDTH:(w+1)*IMG_WIDTH,:] = np.clip(generated_vals, 0, 255).astype("uint8")
 
