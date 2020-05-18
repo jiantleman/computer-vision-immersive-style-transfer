@@ -5,13 +5,13 @@ from scipy.optimize import minimize
 from skimage import io, transform
 import matplotlib.pyplot as plt
 
-from tensorflow.keras import models
 from tensorflow.keras import backend
 from tensorflow.keras.applications.vgg19 import VGG19
 import tensorflow.compat.v1 as tfc
-tfc.disable_v2_behavior()
 
 import hyperparameters as hp
+
+tfc.disable_v2_behavior()
 
 
 # Hyperparameter Constants
@@ -31,7 +31,7 @@ EPOCHS = hp.EPOCHS
 SCALE = hp.SCALE
 
 
-#====================================================================
+# ====================================================================
 # Helper Classes
 
 class Evaluator:
@@ -39,24 +39,24 @@ class Evaluator:
         self.loss_output = loss_output
         self.gradients_output = gradients_output
         self.target_image = target_image
-        
+
     def loss(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
         get_loss = backend.function(self.target_image, self.loss_output)
         [loss] = get_loss([x])
         return loss
-    
+
     def gradients(self, x):
         x = x.reshape((1, IMG_HEIGHT, IMG_WIDTH, CHANNELS))
         get_gradients = backend.function(self.target_image,
                                          self.gradients_output)
-        
+
         gradients = get_gradients([x])
         gradients = np.array(gradients).flatten().astype("float64")
         return gradients
 
 
-#====================================================================
+# ====================================================================
 # Helper Functions
 
 # Parse command-line arguments
@@ -91,7 +91,7 @@ def preprocess_image(image_path, h, w, is_content=False):
                       w*IMG_WIDTH:(w+1)*IMG_WIDTH,
                       :]
     else:
-        image = transform.resize(image,(IMG_HEIGHT, IMG_WIDTH))
+        image = transform.resize(image, (IMG_HEIGHT, IMG_WIDTH))
     image = np.expand_dims(image, axis=0)
     image -= IMAGE_NET_MEAN_RGB
     return image
@@ -100,7 +100,7 @@ def preprocess_image(image_path, h, w, is_content=False):
 # Prepare stylized patch to be saved to the output image
 def postprocess_image(generated_vals):
     generated_vals = generated_vals.reshape((IMG_HEIGHT, IMG_WIDTH,
-                                                         CHANNELS))
+                                             CHANNELS))
     generated_vals += IMAGE_NET_MEAN_RGB
     stylized_patch = np.clip(generated_vals, 0, 255).astype("uint8")
     return stylized_patch
@@ -123,18 +123,18 @@ def gram_matrix(image):
 def new_vgg_model(input_tensor):
     model = VGG19(input_tensor=input_tensor, include_top=False,
                   weights="imagenet")
-    
+
     # Freeze weights
     for layer in model.layers:
         layer.trainable = False
     model.summary()
-    
+
     # Forming the name-output dictionary for each layer
     cnn_layers = dict([(layer.name, layer.output)
                        for layer in model.layers])
-    
+
     return model, cnn_layers
-    
+
 
 # Calculating weighted content loss from feature & combination image
 def content_loss(output):
@@ -147,16 +147,16 @@ def content_loss(output):
 def style_loss(output):
     style_activations = output[1]
     combination_activations = output[2]
-    
+
     style_correlations = gram_matrix(style_activations)
     combination_correlations = gram_matrix(combination_activations)
-    
+
     normalization_factor = (4.0
                             * (CHANNELS ** 2)
                             * ((IMG_HEIGHT * IMG_WIDTH) ** 2))
     style_loss_contribution = sse(style_correlations, combination_correlations)
     style_loss_contribution /= normalization_factor
-    
+
     return STYLE_WEIGHT * style_loss_contribution
 
 
@@ -190,11 +190,11 @@ def generate_combination_image(base_image, evaluator):
         generated_vals = optimize_result.x
         loss = optimize_result.fun
         print("Epoch %d completed with loss %d" % (i, loss))
-        
+
     return generated_vals
 
 
-#=====================================================================
+# =====================================================================
 # Main function
 
 def main():
@@ -212,8 +212,8 @@ def main():
             # Preprocess images
             processed_content_image = preprocess_image(content_image_path, h, w,
                                                        is_content=True)
-            processed_style_image = preprocess_image(style_image_path, h, w)    
-        
+            processed_style_image = preprocess_image(style_image_path, h, w)
+
             print("=====================Images processed=====================")
 
             # Combining images into tensor
@@ -227,9 +227,9 @@ def main():
 
             # Load VGG model
             model, cnn_layers = new_vgg_model(input_tensor)
-            
+
             print("=====================VGG model set-up======================")
-        
+
             # Add content loss
             content_output = cnn_layers[CONTENT_LAYER]
             loss = content_loss(content_output)
@@ -243,9 +243,9 @@ def main():
             # Add variation loss
             loss += variation_loss(combination_image)
             gradients = backend.gradients(loss, [combination_image])
-            
+
             print("====================All tensors set-up=====================")
-                       
+
             # Initialize with the content image to get 'deterministic' results
             base_image = processed_content_image
 
@@ -263,5 +263,5 @@ def main():
 
 
 ARGS = parse_args()
-    
+
 main()

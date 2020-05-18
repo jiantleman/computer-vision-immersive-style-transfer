@@ -1,9 +1,8 @@
 import os
 import argparse
 import numpy as np
-from skimage import io, img_as_float32, transform, filters
-import matplotlib.pyplot as plt
-from PIL import ImageEnhance, Image, ImageFilter
+from skimage import io, transform
+from PIL import Image
 
 import hyperparameters as hp
 
@@ -42,7 +41,7 @@ def parse_args():
 def get_scaled_image(image_path):
     image = io.imread(image_path)
     image = np.asarray(image, dtype="float32")
-    image = transform.resize(image,(SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
+    image = transform.resize(image, (SCALE*IMG_HEIGHT, SCALE*IMG_WIDTH))
     return image
 
 
@@ -53,7 +52,7 @@ def normalize(target, base):
     target_copy = (target_copy - np.mean(target)) / np.std(target)
     target_copy = target_copy * np.std(base) + np.mean(base)
     return target_copy
-    
+
 
 # Blend the target value with the adjustment value based on the multiplier
 def mixin(target, adjustment, multiplier):
@@ -67,10 +66,10 @@ def main():
     output_image_path = ARGS.output
     large_image_path = ARGS.large
     base_image_path = ARGS.base
-    
+
     image = get_scaled_image(large_image_path)
     large_base = get_scaled_image(base_image_path)
-    
+
     for h in range(SCALE):
         for w in range(SCALE):
             cur_quad = image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
@@ -109,12 +108,12 @@ def main():
                     cur_quad[-i, ...] = mixin(cur_quad[-i, ...],
                                               base_quad[-i, ...],
                                               i)
-                    
+
             image[h*IMG_HEIGHT:(h+1)*IMG_HEIGHT,
                   w*IMG_WIDTH:(w+1)*IMG_WIDTH,
-                  :] = cur_quad                    
+                  :] = cur_quad
     # Save image
-    image =  np.clip(image, 0, 255).astype("uint8")
+    image = np.clip(image, 0, 255).astype("uint8")
     image = Image.fromarray(image)
     image.save(output_image_path)
 
