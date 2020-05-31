@@ -10,7 +10,7 @@ let panoramas = [
         "num": 1,
         "panorama": document.getElementById('panorama2'),
         "src_folder": 'data',
-        "src_name": '_content.jpg'
+        "src_name": '_content_optimized.jpg'
     }];
 let viewers = [null, null];
 
