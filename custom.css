@@ -1,0 +1,90 @@
+h1, h2, h3, h4, h5 {
+    font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+body {
+    position: relative;
+    text-align: center;
+    font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+header {
+    color: white;
+
+    position: absolute;
+    padding: 2.5em;
+    border-radius: 2px;
+    text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+
+    bottom: 1%;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}
+
+a, a:visited {
+    color: white;
+}
+
+a:hover {
+    color: silver;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#selector {
+    display: inline-block;
+    vertical-align: middle;
+    opacity: 0.8;
+}
+
+#selector:hover {
+    cursor: pointer;
+    outline: none;
+    opacity: 1;
+}
+
+.carousel {
+    margin-bottom: 1em;
+    position: relative;
+}
+
+.scroll {
+    display: inline-block;
+    padding: 1em;
+    height: 75px;
+    vertical-align: middle;
+    padding-top: 25px;
+}
+.scroll:hover{
+    background-color: rgba(150, 150, 150, .4);
+    cursor: pointer;
+}
+
+.overlay-text {
+    opacity: 1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.overlay-text:hover {
+    cursor: pointer;
+}
+
+.#selector:hover .overlay-text{
+    opacity: 1;
+    display: inline-block;
+}
+
+#panorama2 {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.preload {
+    display: none;
+}
