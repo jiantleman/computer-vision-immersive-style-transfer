@@ -3,13 +3,13 @@ let panoramas = [
     { "id": 'panorama',
       "num": 0,
       "panorama": document.getElementById('panorama'),
-      "src_folder": 'results',
+      "src_folder": 'tinified',
       "src_name": '_output.jpg'
     }, {
         "id": 'panorama2',
         "num": 1,
         "panorama": document.getElementById('panorama2'),
-        "src_folder": 'data',
+        "src_folder": 'tinified',
         "src_name": '_content_optimized.jpg'
     }];
 let viewers = [null, null];
