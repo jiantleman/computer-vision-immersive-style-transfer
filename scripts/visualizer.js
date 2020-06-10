@@ -37,6 +37,9 @@ function updatePanorama() {
     panoramas.forEach(panorama => {
         panorama['panorama'].style.width = `${window.innerWidth}px`;
         panorama['panorama'].style.height = `${window.innerHeight}px`;
+        if (viewers[panorama['num']]) {
+            viewers[panorama['num']].destroy();
+        }
         viewers[panorama['num']] = pannellum.viewer(panorama['id'], {
             "type": "equirectangular",
             "panorama": `${panorama['src_folder']}/${cur_img}${panorama['src_name']}`,
