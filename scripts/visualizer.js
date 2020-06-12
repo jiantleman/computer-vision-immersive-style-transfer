@@ -84,7 +84,7 @@ function updateImg(cmd) {
 }
 
 function displayImg() {
-    selector.src = `results/${cur_img}_output.jpg`;
+    selector.src = `tinified/${cur_img}_thumbnail.jpg`;
 }
 
 function checkImg() {

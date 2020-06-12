@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stylized 360 Panoramas</title>
     <link href='//fonts.googleapis.com/css?family=Raleway:400,300,600' rel='stylesheet' type='text/css'>
-    
+
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
-    
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <link rel="stylesheet" type="text/css" href="custom.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
   </head>
   <body>
     <img class="preload" src="tinified/1_output.jpg">
@@ -33,15 +32,14 @@
       <h1>Stylized 360° Panoramas</h1>
       <h4 onclick="swapPanorama()"><span id="switch-method">Hit [space]</span> to see the <span id="type">original</span> panorama!</h4>
       <div class="carousel">
-        <div class="scroll" onclick="updateImg('prev')"><a> &#10094; </a></div><img id="selector" src="results/1_output.jpg" height="75" onclick="updatePanorama()"><a class="scroll" onclick="updateImg('next')"> &#10095;</a>
+        <div class="scroll" onclick="updateImg('prev')"><a> &#10094; </a></div><img id="selector" src="tinified/1_thumbnail.jpg" height="75" onclick="updatePanorama()"><a class="scroll" onclick="updateImg('next')"> &#10095;</a>
         <div class="overlay">
           <div class="overlay-text" onclick="updatePanorama()">View Panorama</div>
         </div>
       </div>
-      
-      <div class="credits">Built and stylized by <a href="https://github.com/desmondcheongzx" target="_blank">Desmond Cheong</a>, <a href="https://github.com/jiantleman" target="_blank">Jian Cong Loh</a>, and <a href="https://github.com/miku-suga" target="_blank">Miku Suga</a>. Powered by <a href="https://pannellum.org" target="_blank">Pannellum</a>.</div>
+      <div class="credits">Built and stylized by <a href="https://www.desmondcheong.com/" target="_blank">Desmond Cheong</a>, <a href="https://github.com/jiantleman" target="_blank">Jian Cong Loh</a>, and <a href="https://github.com/miku-suga" target="_blank">Miku Suga</a>. Powered by <a href="https://pannellum.org" target="_blank">Pannellum</a>.</div>
     </header>
-
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <script type="text/javascript" src="scripts/visualizer.js"></script>
   </body>
 </html>
